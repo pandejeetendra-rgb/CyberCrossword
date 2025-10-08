@@ -3,17 +3,24 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cyber Crossword – Keyboard Configured</title>
+<title>Cyber Crossword – UOU Gamified Assessment</title>
 <style>
-  body { background:#f8f8f8; font-family:Segoe UI,Arial,sans-serif; margin:0; text-align:center; }
-  h1 { margin-top:10px; }
+  body { background:#f8f8f8; font-family:Segoe UI,Arial,sans-serif; margin:0; color:#222; }
+  .wrap { max-width:960px; margin:0 auto; padding:20px; }
+  h1 { text-align:center; margin-top:0; }
+  p { text-align:center; color:#555; }
+
+  .hud { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  .chip { background:#fff; border:1px solid #ddd; padding:8px 14px; border-radius:999px; }
+
   .grid {
     display:grid;
     grid-template-columns:repeat(10,1fr);
     width:min(95vw,480px);
     aspect-ratio:1;
     border:3px solid #000;
-    margin:20px auto;
+    margin:0 auto 16px;
+    user-select:none;
   }
   .cell {
     border:1px solid #999;
@@ -30,33 +37,67 @@
   .active { outline:3px solid #1f6ef3; outline-offset:-3px; }
   .prefill { font-weight:900; color:#000; }
   .num { position:absolute; top:2px; left:4px; font-size:10px; color:#444; }
+
+  .actions { text-align:center; margin:10px 0; }
+  button { padding:10px 14px; margin:4px; border:1px solid #ccc; border-radius:8px; cursor:pointer; }
+  button.primary { background:#1f6ef3; color:#fff; border:none; }
+
+  .clues { background:#fff; border:1px solid #ddd; padding:12px 16px; border-radius:10px; margin-top:20px; }
+  .clues h3 { margin-top:0; }
+  .clue { margin:6px 0; cursor:pointer; }
+  .clue strong { color:#1f6ef3; }
+
+  footer { text-align:center; margin-top:20px; font-size:13px; color:#777; }
 </style>
 </head>
 <body>
-<h1>🧠 Cyber Crossword</h1>
-<p>Click any white box and start typing your answer.</p>
-<div id="grid" class="grid"></div>
+<div class="wrap">
+  <h1>🧠 Cyber Crossword</h1>
+  <p>Click a white cell and start typing your answer.</p>
 
-<input type="text" id="hiddenInput" maxlength="1"
- style="position:absolute;opacity:0;pointer-events:none;" />
+  <div class="hud">
+    <div class="chip">⭐ Score: <span id="score">0</span></div>
+    <div class="chip">⏱ Time: <span id="timer">00:00</span></div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <input type="text" id="hiddenInput" maxlength="1" style="position:absolute;opacity:0;pointer-events:none;" />
+
+  <div class="actions">
+    <button id="check">Check Answers</button>
+    <button id="show">Show Solution</button>
+    <button id="restart">Restart</button>
+    <button id="submit" class="primary">Submit Score</button>
+  </div>
+
+  <div class="clues">
+    <h3>Across Clues</h3>
+    <div id="across"></div>
+  </div>
+
+  <footer>Developed by Prof. Jeetendra Pande – Uttarakhand Open University</footer>
+</div>
 
 <script>
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwAeFpW8HcizrRrZVVRL4WYLaZwoOIpeiQxKTHnvTuPqBIxJ9nUUVZtaoWk3XKwYw0/exec";
+
 const PUZZLE = {
   size:10,
   across:[
-    {n:1,row:0,col:1,answer:"FIREWALL"},
-    {n:2,row:2,col:2,answer:"ENCRYPT"},
-    {n:3,row:4,col:0,answer:"ROUTER"},
-    {n:4,row:5,col:3,answer:"MALWARE"},
+    {n:1,row:0,col:1,answer:"FIREWALL",clue:"Device that filters network traffic."},
+    {n:2,row:2,col:2,answer:"ENCRYPT",clue:"Convert plaintext into ciphertext."},
+    {n:3,row:4,col:0,answer:"ROUTER",clue:"Forwards packets between networks."},
+    {n:4,row:5,col:3,answer:"MALWARE",clue:"Malicious software or code."},
+    {n:5,row:7,col:3,answer:"PROXY",clue:"Intermediary server that forwards requests."},
+    {n:6,row:9,col:1,answer:"PASSWORD",clue:"Secret string to access a system."}
   ]
 };
 
 const size=PUZZLE.size, block="#";
 const solution=Array.from({length:size},()=>Array(size).fill(block));
-PUZZLE.across.forEach(a=>{
-  for(let i=0;i<a.answer.length;i++) solution[a.row][a.col+i]=a.answer[i];
-});
-const state={cells:Array.from({length:size},()=>Array(size).fill("")),fixed:Array.from({length:size},()=>Array(size).fill(false)),active:null};
+PUZZLE.across.forEach(a=>{for(let i=0;i<a.answer.length;i++) solution[a.row][a.col+i]=a.answer[i];});
+
+const state={cells:Array.from({length:size},()=>Array(size).fill("")),fixed:Array.from({length:size},()=>Array(size).fill(false)),active:null,score:0,start:Date.now()};
 PUZZLE.across.forEach(a=>{state.cells[a.row][a.col]=a.answer[0];state.fixed[a.row][a.col]=true;});
 
 const grid=document.getElementById("grid");
@@ -107,7 +148,71 @@ function moveNext(){
   }
 }
 
-render();
+function checkAnswers(){
+  let correct=0,total=0;
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(solution[r][c]===block)continue;
+    total++;
+    if(state.cells[r][c]===solution[r][c])correct++;
+  }
+  state.score=Math.round((correct/total)*100);
+  document.getElementById("score").textContent=state.score;
+  alert(`✅ Score: ${state.score}%`);
+}
+
+function showSolution(){
+  for(let r=0;r<size;r++)
+    for(let c=0;c<size;c++)
+      if(solution[r][c]!==block) state.cells[r][c]=solution[r][c];
+  render();
+  alert("✅ Full solution revealed.");
+}
+
+function restart(){
+  for(let r=0;r<size;r++)
+    for(let c=0;c<size;c++)
+      if(!state.fixed[r][c]&&solution[r][c]!==block)state.cells[r][c]="";
+  state.score=0;
+  document.getElementById("score").textContent="0";
+  render();
+}
+
+function submitScore(){
+  const name = prompt("Enter your name to record score:") || "Anonymous";
+  fetch(ENDPOINT,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action:"add_score",player:name,theme:"crossword",score:state.score})
+  })
+  .then(()=>alert("Score submitted to leaderboard!"))
+  .catch(()=>alert("Error submitting score."));
+}
+
+function renderClues(){
+  const container=document.getElementById("across");
+  container.innerHTML="";
+  PUZZLE.across.forEach(a=>{
+    const div=document.createElement("div");
+    div.className="clue";
+    div.innerHTML=`<strong>${a.n}.</strong> ${a.clue}`;
+    div.onclick=()=>{state.active={r:a.row,c:a.col};render();};
+    container.appendChild(div);
+  });
+}
+
+setInterval(()=>{
+  const t=Math.floor((Date.now()-state.start)/1000);
+  const m=String(Math.floor(t/60)).padStart(2,"0");
+  const s=String(t%60).padStart(2,"0");
+  document.getElementById("timer").textContent=`${m}:${s}`;
+},1000);
+
+document.getElementById("check").onclick=checkAnswers;
+document.getElementById("show").onclick=showSolution;
+document.getElementById("restart").onclick=restart;
+document.getElementById("submit").onclick=submitScore;
+
+render(); renderClues();
 </script>
 </body>
 </html>
