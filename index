@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyber Crossword – Light Theme</title>
+  <style>
+    :root{
+      --bg:#f8f8f8; --ink:#222; --muted:#666; --accent:#1f6ef3;
+      --grid:#000; --cell:#fff; --block:#d9d9d9; --good:#0f9d58; --bad:#d93025;
+      --ring: rgba(31,110,243,.18);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.5 "Segoe UI",Roboto,system-ui,Arial,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+    h1{font-size:18px;margin:0}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    input,button{padding:10px 12px;border-radius:10px;border:1px solid #cfcfcf;background:#fff}
+    button{cursor:pointer}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .hud{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .chip{border:1px solid #ddd;padding:6px 10px;border-radius:999px;color:#333;font-size:14px;background:#fff}
+
+    .layout{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:880px){.layout{grid-template-columns:minmax(340px,1fr) 320px}}
+
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.04)}
+    .card>h3{margin:12px 12px 0}
+    .card .body{padding:12px}
+
+    .grid{--n:10;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:0;border:3px solid var(--grid);
+      width:min(92vw,520px);aspect-ratio:1;margin:8px auto;background:#fff;outline:none}
+    .cell{position:relative;border:1px solid #999;display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:18px;background:var(--cell);user-select:none}
+    .cell.block{background:var(--block)}
+    .cell.prefill{color:#000;font-weight:800}
+    .cell.active{outline:3px solid var(--accent);outline-offset:-3px;box-shadow:inset 0 0 0 4px var(--ring)}
+    .cell.correct{color:var(--good)}
+    .cell.wrong{color:var(--bad)}
+    .num{position:absolute;top:2px;left:4px;font-size:10px;color:#444;font-weight:600}
+
+    .clues h4{margin:6px 0}
+    .clue{padding:6px 8px;border-radius:8px;margin:4px 0;cursor:pointer}
+    .clue:hover{background:#f1f4ff}
+    .clue.active{background:#e6efff;border-left:3px solid var(--accent)}
+    .clue small{color:var(--muted)}
+
+    .footer{font-size:13px;color:var(--muted);margin-top:8px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧠 Cyber Crossword</h1>
+      <div class="toolbar">
+        <input id="player" placeholder="Your name" maxlength="30" />
+        <button id="start" class="primary">Start Crossword</button>
+      </div>
+    </header>
+
+    <div class="hud">
+      <div class="chip">⏱ <span id="timer">00:00</span></div>
+      <div class="chip">⭐ Score: <span id="score">0</span></div>
+    </div>
+
+    <section class="layout">
+      <div class="card">
+        <div class="body">
+          <div id="grid" class="grid" tabindex="0"></div>
+          <div class="actions">
+            <button id="check">Check Answers</button>
+            <button id="reveal">Reveal Letter</button>
+            <button id="showAll">Show Solution</button>
+            <button id="restart">Restart</button>
+            <button id="submit" class="primary">Submit Score</button>
+          </div>
+          <p class="footer">White = editable, grey = blocked, bold = prefilled.</p>
+        </div>
+      </div>
+
+      <aside class="card clues">
+        <h3>Clues</h3>
+        <div class="body">
+          <h4>Across</h4>
+          <div id="cluesAcross"></div>
+          <h4 style="margin-top:12px">Down</h4>
+          <div id="cluesDown"></div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwAeFpW8HcizrRrZVVRL4WYLaZwoOIpeiQxKTHnvTuPqBIxJ9nUUVZtaoWk3XKwYw0/exec';
+
+    const PUZZLE = {
+      size: 10,
+      across: [
+        { n:1, row:0, col:1, answer:'FIREWALL', clue:'Device that filters network traffic.' },
+        { n:2, row:2, col:2, answer:'ENCRYPT', clue:'Convert plaintext to ciphertext.' },
+        { n:3, row:4, col:0, answer:'ROUTER', clue:'Forwards packets between networks.' },
+        { n:4, row:5, col:3, answer:'MALWARE', clue:'Malicious software umbrella term.' },
+        { n:5, row:7, col:3, answer:'PROXY', clue:'Intermediary that forwards requests.' },
+        { n:6, row:9, col:1, answer:'PASSWORD', clue:'Secret string that controls access.' },
+      ],
+      prefill: 1
+    };
+
+    const size = PUZZLE.size, block='#';
+    const solution = Array.from({length:size},()=>Array(size).fill(block));
+    PUZZLE.across.forEach(a=>{
+      for(let i=0;i<a.answer.length;i++) solution[a.row][a.col+i]=a.answer[i];
+    });
+
+    const {downs:nDown,numMap}=(function deriveDown(){
+      const downs=[],numMap=Array.from({length:size},()=>Array(size).fill(null));
+      PUZZLE.across.forEach(a=>numMap[a.row][a.col]=a.n);
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const ch=solution[r][c];
+        if(ch===block)continue;
+        const start=(r===0||solution[r-1][c]===block)&&(r+1<size&&solution[r+1][c]!==block);
+        if(start){
+          let n=numMap[r][c]||Math.max(0,...PUZZLE.across.map(x=>x.n))+downs.length+1;
+          numMap[r][c]=n;
+          let rr=r,word='';while(rr<size&&solution[rr][c]!==block){word+=solution[rr][c];rr++;}
+          downs.push({n,row:r,col:c,answer:word,clue:`Cyber term (${word.length} letters)`});
+        }
+      }
+      return {downs,numMap};
+    })();
+
+    const $=s=>document.querySelector(s);
+    const gridEl=$('#grid');
+    const state={cells:Array.from({length:size},()=>Array(size).fill('')),fixed:Array.from({length:size},()=>Array(size).fill(false)),active:null,dir:'across',score:0};
+
+    PUZZLE.across.forEach(a=>{state.cells[a.row][a.col]=a.answer[0];state.fixed[a.row][a.col]=true;});
+
+    function renderGrid(){
+      gridEl.innerHTML='';
+      for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+          const isBlock=solution[r][c]===block&&!state.fixed[r][c];
+          const cell=document.createElement('div');
+          cell.className='cell'+(isBlock?' block':'');
+          if(!isBlock){
+            cell.tabIndex=0;
+            cell.setAttribute('role','textbox');
+            const num=numMap[r][c];
+            if(num!=null){const n=document.createElement('div');n.className='num';n.textContent=num;cell.appendChild(n);}
+            const val=state.cells[r][c]||'';cell.textContent+=val;
+            cell.addEventListener('focus',()=>selectCell(r,c));
+            cell.addEventListener('keydown',e=>onKey(e,r,c));
+          }
+          gridEl.appendChild(cell);
+        }
+      }
+      highlight();
+    }
+
+    function selectCell(r,c){state.active={r,c};state.dir='across';renderGrid();}
+    function onKey(e,r,c){
+      const k=e.key.toUpperCase();
+      if(k.length===1&&/[A-Z]/.test(k)){if(!state.fixed[r][c])state.cells[r][c]=k;moveNext(r,c);e.preventDefault();renderGrid();}
+      if(e.key==='Backspace'){if(!state.fixed[r][c])state.cells[r][c]='';movePrev(r,c);e.preventDefault();renderGrid();}
+    }
+    function moveNext(r,c){if(state.dir==='across'){for(let cc=c+1;cc<size;cc++){if(solution[r][cc]!==block){state.active={r, c:cc};renderGrid();break;}}}}
+    function movePrev(r,c){if(state.dir==='across'){for(let cc=c-1;cc>=0;cc--){if(solution[r][cc]!==block){state.active={r, c:cc};renderGrid();break;}}}}
+    function highlight(){if(!state.active)return;const{r,c}=state.active;const idx=(r,c)=>r*size+c;gridEl.children[idx(r,c)]?.classList.add('active');}
+
+    function renderClues(){
+      const A=$('#cluesAcross'),D=$('#cluesDown');A.innerHTML='';D.innerHTML='';
+      PUZZLE.across.forEach(a=>{const el=document.createElement('div');el.className='clue';el.innerHTML=`<strong>${a.n}.</strong> ${a.clue}`;el.onclick=()=>selectCell(a.row,a.col);A.appendChild(el);});
+      nDown.forEach(d=>{const el=document.createElement('div');el.className='clue';el.innerHTML=`<strong>${d.n}.</strong> ${d.clue}`;el.onclick=()=>{state.dir='down';selectCell(d.row,d.col);};D.appendChild(el);});
+    }
+
+    function checkAnswers(){
+      let correct=0,total=0;
+      const g=gridEl.children;
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        if(solution[r][c]===block)continue;
+        total++;const cell=g[r*size+c];
+        const val=state.cells[r][c];
+        if(val===solution[r][c]){cell.classList.add('correct');cell.classList.remove('wrong');correct++;}
+        else if(val){cell.classList.add('wrong');cell.classList.remove('correct');}
+      }
+      state.score=Math.round((correct/total)*100);
+      $('#score').textContent=state.score;
+    }
+
+    function revealLetter(){
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++)
+        if(solution[r][c]!==block&&!state.fixed[r][c]&&state.cells[r][c]!==solution[r][c]){
+          state.cells[r][c]=solution[r][c];renderGrid();return;
+        }
+    }
+
+    function showSolution(){
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++)
+        if(solution[r][c]!==block){state.cells[r][c]=solution[r][c];}
+      renderGrid();
+      alert('✅ Full solution revealed.');
+    }
+
+    function restart(){
+      state.score=0;$('#score').textContent='0';
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(!state.fixed[r][c]&&solution[r][c]!==block)state.cells[r][c]='';
+      renderGrid();
+    }
+
+    function submitScore(){
+      const name=$('#player').value||'Anonymous';
+      fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add_score',player:name,theme:'crossword',score:state.score})})
+        .then(()=>alert('Score submitted!')).catch(()=>alert('Error submitting.'));
+    }
+
+    $('#start').onclick=()=>{renderGrid();renderClues();};
+    $('#check').onclick=checkAnswers;
+    $('#reveal').onclick=revealLetter;
+    $('#showAll').onclick=showSolution;
+    $('#restart').onclick=restart;
+    $('#submit').onclick=submitScore;
+  </script>
+</body>
+</html>
