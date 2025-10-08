@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cyber Crossword – Interconnected & Numbered</title>
+<title>Cyber Crossword – Interlocking & Numbered</title>
 <style>
   :root{
     --bg:#f8f8f8; --ink:#222; --muted:#666; --accent:#1f6ef3;
@@ -11,10 +11,10 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.5 Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{max-width:1000px;margin:0 auto;padding:18px}
+  .wrap{max-width:1020px;margin:0 auto;padding:16px}
   header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   h1{margin:0;font-size:20px}
-  .hud{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .hud{display:flex;gap:10px;flex-wrap:wrap}
   .chip{background:#fff;border:1px solid #ddd;border-radius:999px;padding:6px 10px}
   .layout{display:grid;grid-template-columns:1fr;gap:14px}
   @media(min-width:900px){.layout{grid-template-columns:minmax(380px,1fr) 360px}}
@@ -40,15 +40,13 @@
   .cell.block{background:var(--block);cursor:default}
   .num{position:absolute;top:2px;left:4px;font-size:10px;color:#444;font-weight:600}
   .active{outline:3px solid var(--accent);outline-offset:-3px}
-  .wordHighlight{box-shadow:inset 0 0 0 4px rgba(31,110,243,.18)}
+  .wordHL{box-shadow:inset 0 0 0 4px rgba(31,110,243,.18)}
   .correct{color:var(--good)} .wrong{color:var(--bad)}
 
-  /* Actions */
   .actions{text-align:center;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   button{padding:10px 12px;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
   button.primary{background:var(--accent);color:#fff;border:none}
 
-  /* Clues & Leaderboard */
   .clues{padding:8px 12px}
   .clues h3{margin:6px 0}
   .clue{padding:6px;border-radius:8px;margin:4px 0;cursor:pointer}
@@ -102,304 +100,260 @@
   </section>
 
   <footer style="text-align:center;margin-top:10px;color:#777;font-size:13px">
-    Light newspaper style · Intersections + numbering · Click a clue or cell to highlight its word
+    Click a clue or cell. Click the same cell again to toggle Across/Down.
   </footer>
 </div>
 
 <script>
-/* =========================
-   Settings / Data
-========================= */
+/* ========== CONFIG ========= */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwAeFpW8HcizrRrZVVRL4WYLaZwoOIpeiQxKTHnvTuPqBIxJ9nUUVZtaoWk3XKwYw0/exec";
 
-/* Grid size: 11×11, with border blocks for clarity
-   ACROSS defines each placed word with row/col start and answer text.
-   You can move words or add more; blocks are generated automatically. */
+/* Fixed 11×11 matrix with letters for the solution and # for blocks.
+   This guarantees rendering and interlocking words. */
 const SIZE = 11;
-const ACROSS = [
-  { n:1,  row:1, col:1, answer:"FIREWALL", clue:"Device that filters network traffic." },   // c1..8
-  { n:2,  row:2, col:3, answer:"ENCRYPT",  clue:"Convert plaintext into ciphertext." },     // c3..9
-  { n:3,  row:3, col:1, answer:"ROUTER",   clue:"Forwards packets between networks." },     // c1..6
-  { n:4,  row:4, col:4, answer:"MALWARE",  clue:"Malicious software umbrella term." },      // c4..10
-  { n:5,  row:5, col:3, answer:"PROXY",    clue:"Intermediary server that forwards requests." }, // c3..7
-  { n:6,  row:6, col:2, answer:"PASSWORD", clue:"Secret string that controls access." }      // c2..9
+const BLOCK = "#";
+
+/* Interlocking layout:
+   - FIREWALL across (row1 col1..8)
+   - ENCRYPT down  (starts row1 col4)
+   - ROUTER  down  (starts row1 col3)
+   - MALWARE down  (starts row0 col6)
+   You can add more letters later; just place them in the MATRIX. */
+const MATRIX = [
+  "######M####",  // r0: MALWARE starts here (M)
+  "#FIREWALL##", // r1
+  "###ON#L####", // r2: O,N from ROUTER/ENCRYPT; L from MALWARE
+  "###UC#W####", // r3
+  "###TR#A####", // r4
+  "###EY#R####", // r5
+  "###RP#E####", // r6
+  "####T######", // r7
+  "###########", // r8
+  "###########", // r9
+  "###########"  // r10
 ];
 
-/* Optional: if a DOWN entry matches one of these keys, we show the specific clue. */
-const CLUES_BY_ANSWER = {
-  VPN: "Secure private network tunnel.",
-  AES: "Widely used symmetric cipher.",
-  WORM: "Self-replicating malware.",
-  IDS: "Monitors for intrusions.",
-  HASH: "Fixed-length digest of data.",
-  SSL: "Legacy predecessor to TLS."
+/* Friendly clue texts for known answers */
+const CLUES_BY_WORD = {
+  FIREWALL: "Device that filters network traffic.",
+  ENCRYPT:  "Convert plaintext into ciphertext.",
+  ROUTER:   "Forwards packets between networks.",
+  MALWARE:  "Malicious software or code."
 };
 
-/* =========================
-   Build Solution Matrix
-========================= */
-const BLOCK = "#";
-const solution = Array.from({length:SIZE},()=>Array(SIZE).fill(BLOCK));
-ACROSS.forEach(a=>{
-  for(let i=0;i<a.answer.length;i++){
-    solution[a.row][a.col+i] = a.answer[i].toUpperCase();
-  }
-});
+/* ========= BUILD SOLUTION ARRAYS ========= */
+const solution = MATRIX.map(row => row.split(""));
 
-/* =========================
-   Derive Across & Down lists with numbering
-========================= */
-function deriveAcrossAndDown(){
-  // Across: start when cell != block and (col==0 or left is block)
-  const acrossOut = [];
-  const numMap = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
-  ACROSS.forEach(a => numMap[a.row][a.col] = a.n); // ensure these numbers
-  // Fill missing across numbers (if you add more words later)
-  let autoN = Math.max(...ACROSS.map(a=>a.n)) + 1;
+/* ========= Derive Across + Down + Numbers ========= */
+function deriveEntries(){
+  const numbers = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  const across=[], down=[];
+  let next = 1;
 
+  // helper to assign a number if none
+  const ensureNum = (r,c) => {
+    if(numbers[r][c]==null) numbers[r][c] = next++;
+    return numbers[r][c];
+  };
+
+  // Across starts
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       if(solution[r][c]===BLOCK) continue;
-      const isStart = (c===0 || solution[r][c-1]===BLOCK);
-      if(isStart){
-        let word='', cc=c;
-        while(cc<SIZE && solution[r][cc]!==BLOCK){ word+=solution[r][cc]; cc++; }
-        // Find matching across record if exists
-        let existing = ACROSS.find(a=>a.row===r && a.col===c && a.answer.length===word.length);
-        let n = existing?.n ?? autoN++;
-        numMap[r][c] = n;
-        acrossOut.push({
-          n, row:r, col:c, answer:word,
-          clue: existing?.clue || (`Cyber term (${word.length} letters)`)
-        });
+      const leftBlocked = (c===0 || solution[r][c-1]===BLOCK);
+      const rightContinues = (c+1<SIZE && solution[r][c+1]!==BLOCK);
+      if(leftBlocked && rightContinues){
+        let word="", cc=c;
+        while(cc<SIZE && solution[r][cc]!==BLOCK){ word += solution[r][cc]; cc++; }
+        if(word.length>=3){ // ignore 1–2 letter fillers
+          const n = ensureNum(r,c);
+          across.push({ n, row:r, col:c, answer:word,
+                        clue: CLUES_BY_WORD[word] || `Cyber term (${word.length} letters)` });
+        }
       }
     }
   }
-
-  // Down: start when cell != block and (row==0 or above is block)
-  const downOut = [];
+  // Down starts
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       if(solution[r][c]===BLOCK) continue;
-      const isStart = (r===0 || solution[r-1][c]===BLOCK);
-      const continues = (r+1<SIZE && solution[r+1][c]!==BLOCK);
-      if(isStart && continues){
-        let word='', rr=r;
-        while(rr<SIZE && solution[rr][c]!==BLOCK){ word+=solution[rr][c]; rr++; }
-        // numbering: if an across number exists at this start, reuse; else assign next
-        let n = numMap[r][c];
-        if(n==null){ n = autoN++; numMap[r][c] = n; }
-        downOut.push({
-          n, row:r, col:c, answer:word,
-          clue: CLUES_BY_ANSWER[word] || `Intersects (${word.length} letters)`
-        });
+      const upBlocked   = (r===0 || solution[r-1][c]===BLOCK);
+      const downCont    = (r+1<SIZE && solution[r+1][c]!==BLOCK);
+      if(upBlocked && downCont){
+        let word="", rr=r;
+        while(rr<SIZE && solution[rr][c]!==BLOCK){ word += solution[rr][c]; rr++; }
+        if(word.length>=3){
+          const n = numbers[r][c]!=null ? numbers[r][c] : (numbers[r][c]=next++);
+          down.push({ n, row:r, col:c, answer:word,
+                      clue: CLUES_BY_WORD[word] || `Intersects (${word.length} letters)` });
+        }
       }
     }
   }
-  return {acrossOut, downOut, numMap};
+  return {across, down, numbers};
 }
-const {acrossOut, downOut, numMap} = deriveAcrossAndDown();
+const {across, down, numbers} = deriveEntries();
 
-/* =========================
-   State
-========================= */
+/* ========= State ========= */
 const $ = s => document.querySelector(s);
 const gridEl = $('#grid');
 const hiddenInput = $('#hiddenInput');
-
 const state = {
-  cells: Array.from({length:SIZE},()=>Array(SIZE).fill('')),
+  cells: Array.from({length:SIZE},()=>Array(SIZE).fill("")),
   fixed: Array.from({length:SIZE},()=>Array(SIZE).fill(false)),
-  active: null,               // {r,c}
-  dir: 'across',              // 'across' | 'down'
+  active: null,  // {r,c}
+  dir: "across",
   score: 0,
-  startTs: Date.now()
+  start: Date.now()
 };
-
-// Prefill first letter of each across (optional starter hint)
-ACROSS.forEach(a=>{
-  state.cells[a.row][a.col] = a.answer[0].toUpperCase();
-  state.fixed[a.row][a.col] = true;
+// Optional: prefill first letter of FIREWALL, ENCRYPT, ROUTER, MALWARE
+[{r:1,c:1},{r:1,c:4},{r:1,c:3},{r:0,c:6}].forEach(p=>{
+  state.cells[p.r][p.c]=solution[p.r][p.c]; state.fixed[p.r][p.c]=true;
 });
 
-/* =========================
-   Rendering
-========================= */
+/* ========= Render Grid ========= */
 function renderGrid(){
   gridEl.style.setProperty('--n', SIZE);
-  gridEl.innerHTML = '';
+  gridEl.innerHTML='';
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
+      const cell=document.createElement('div');
       const isBlock = solution[r][c]===BLOCK && !state.fixed[r][c];
-      const cell = document.createElement('div');
-      cell.className = 'cell' + (isBlock ? ' block':'');
+      cell.className='cell'+(isBlock?' block':'');
       if(!isBlock){
-        // number
-        const n = numMap[r][c];
-        if(n!=null){ const num = document.createElement('div'); num.className='num'; num.textContent=n; cell.appendChild(num); }
-        // letter
+        const n = numbers[r][c];
+        if(n!=null){ const num=document.createElement('div'); num.className='num'; num.textContent=n; cell.appendChild(num); }
         const val = state.cells[r][c] || '';
         cell.appendChild(document.createTextNode(val));
-        // events
-        cell.onclick = (e)=> {
+        cell.onclick = (e)=>{
           if(state.active && state.active.r===r && state.active.c===c){
-            // toggle direction on second click
-            state.dir = (state.dir==='across' ? 'down' : 'across');
+            state.dir = state.dir==='across' ? 'down' : 'across';
           }else{
-            state.active = {r,c};
-            // choose direction by start preference
+            state.active={r,c};
             state.dir = guessDir(r,c);
           }
-          focusHiddenAt(e.target);
-          highlightPath();
+          focusHidden(e.target);
+          highlightWord();
         };
       }
       gridEl.appendChild(cell);
     }
   }
-  highlightPath();
+  highlightWord();
 }
 
 function guessDir(r,c){
-  // prefer across if it forms a valid across slot start/inside
-  const leftBlock = (c===0 || solution[r][c-1]===BLOCK);
-  const rightOk   = (c+1<SIZE && solution[r][c+1]!==BLOCK);
-  if(leftBlock && rightOk) return 'across';
-  const upBlock   = (r===0 || solution[r-1][c]===BLOCK);
-  const downOk    = (r+1<SIZE && solution[r+1][c]!==BLOCK);
-  if(upBlock && downOk) return 'down';
+  const leftBlocked=(c===0||solution[r][c-1]===BLOCK), rightOk=(c+1<SIZE&&solution[r][c+1]!==BLOCK);
+  if(leftBlocked && rightOk) return 'across';
+  const upBlocked=(r===0||solution[r-1][c]===BLOCK), downOk=(r+1<SIZE&&solution[r+1][c]!==BLOCK);
+  if(upBlocked && downOk) return 'down';
   return 'across';
 }
 
-function focusHiddenAt(target){
-  const rect = target.getBoundingClientRect();
-  hiddenInput.style.left = rect.left + 'px';
-  hiddenInput.style.top  = rect.top  + 'px';
+function focusHidden(target){
+  const rect=target.getBoundingClientRect();
+  hiddenInput.style.left=rect.left+'px';
+  hiddenInput.style.top=rect.top+'px';
   hiddenInput.focus();
 }
 
-function highlightPath(){
-  // clear
-  [...gridEl.children].forEach(el=>{
-    el.classList.remove('active','wordHighlight');
-  });
+function highlightWord(){
+  [...gridEl.children].forEach(el=>el.classList.remove('active','wordHL'));
   if(!state.active) return;
-  const idx = (r,c)=> r*SIZE + c;
-  const {r,c} = state.active;
-  const activeCell = gridEl.children[idx(r,c)];
-  activeCell?.classList.add('active');
-
+  const idx=(r,c)=>r*SIZE+c;
+  const {r,c}=state.active;
+  gridEl.children[idx(r,c)]?.classList.add('active');
   if(state.dir==='across'){
     let cc=c; while(cc>0 && solution[r][cc-1]!==BLOCK) cc--;
-    while(cc<SIZE && solution[r][cc]!==BLOCK){
-      gridEl.children[idx(r,cc)]?.classList.add('wordHighlight');
-      cc++;
-    }
-  }else{
+    while(cc<SIZE && solution[r][cc]!==BLOCK){ gridEl.children[idx(r,cc)]?.classList.add('wordHL'); cc++; }
+  } else {
     let rr=r; while(rr>0 && solution[rr-1][c]!==BLOCK) rr--;
-    while(rr<SIZE && solution[rr][c]!==BLOCK){
-      gridEl.children[idx(rr,c)]?.classList.add('wordHighlight');
-      rr++;
-    }
+    while(rr<SIZE && solution[rr][c]!==BLOCK){ gridEl.children[idx(rr,c)]?.classList.add('wordHL'); rr++; }
   }
 }
 
-/* =========================
-   Keyboard Input (invisible field)
-========================= */
+/* ========= Keyboard Input via hidden field ========= */
 hiddenInput.addEventListener('input', ()=>{
   if(!state.active) return;
-  const {r,c} = state.active;
-  const ch = (hiddenInput.value || '').toUpperCase();
-  hiddenInput.value = '';
-  if(ch && /[A-Z]/.test(ch) && !state.fixed[r][c] && solution[r][c]!==BLOCK){
-    state.cells[r][c] = ch;
-    step(1);
+  const {r,c}=state.active;
+  const ch=(hiddenInput.value||'').toUpperCase();
+  hiddenInput.value='';
+  if(/[A-Z]/.test(ch) && !state.fixed[r][c] && solution[r][c]!==BLOCK){
+    state.cells[r][c]=ch;
+    step(+1);
     renderGrid();
   }
 });
 document.addEventListener('keydown', (e)=>{
   if(!state.active) return;
   if(e.key==='Backspace'){
-    const {r,c} = state.active;
-    if(!state.fixed[r][c]) state.cells[r][c] = '';
-    step(-1);
-    e.preventDefault();
-    renderGrid();
+    const {r,c}=state.active;
+    if(!state.fixed[r][c]) state.cells[r][c]='';
+    step(-1); e.preventDefault(); renderGrid();
   }
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
-    const d = {ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]}[e.key];
-    moveBy(d[0], d[1]); e.preventDefault(); renderGrid();
+    const d={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]}[e.key];
+    moveBy(d[0],d[1]); e.preventDefault(); renderGrid();
   }
 });
 function step(dir){
-  const {r,c} = state.active;
-  if(state.dir==='across') moveTo(r, c+dir, 0, dir);
-  else                     moveTo(r+dir, c, dir, 0);
+  const {r,c}=state.active;
+  if(state.dir==='across') moveTo(r,c+dir,0,dir);
+  else moveTo(r+dir,c,dir,0);
 }
 function moveBy(dr,dc){
-  const {r,c} = state.active;
-  moveTo(r+dr, c+dc, dr, dc);
+  const {r,c}=state.active; moveTo(r+dr,c+dc,dr,dc);
 }
 function moveTo(rr,cc,dr,dc){
-  while(rr>=0 && rr<SIZE && cc>=0 && cc<SIZE){
+  while(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE){
     if(solution[rr][cc]!==BLOCK){ state.active={r:rr,c:cc}; return; }
     rr+=dr; cc+=dc;
   }
 }
 
-/* =========================
-   Clues
-========================= */
+/* ========= Clues ========= */
 function renderClues(){
-  const A = $('#cluesAcross'), D = $('#cluesDown');
-  A.innerHTML=''; D.innerHTML='';
-  acrossOut.forEach(a=>{
-    const el = document.createElement('div');
-    el.className='clue';
-    el.innerHTML = `<strong>${a.n}.</strong> ${a.clue} <small>(${a.answer.length})</small>`;
-    el.onclick = ()=>{ state.dir='across'; state.active={r:a.row,c:a.col}; renderGrid(); };
+  const A=$('#cluesAcross'), D=$('#cluesDown'); A.innerHTML=''; D.innerHTML='';
+  across.forEach(a=>{
+    const el=document.createElement('div'); el.className='clue';
+    el.innerHTML=`<strong>${a.n}.</strong> ${a.clue} <small>(${a.answer.length})</small>`;
+    el.onclick=()=>{ state.dir='across'; state.active={r:a.row,c:a.col}; renderGrid(); };
     A.appendChild(el);
   });
-  downOut.forEach(d=>{
-    const el = document.createElement('div');
-    el.className='clue';
-    el.innerHTML = `<strong>${d.n}.</strong> ${d.clue} <small>(${d.answer.length})</small>`;
-    el.onclick = ()=>{ state.dir='down'; state.active={r:d.row,c:d.col}; renderGrid(); };
+  down.forEach(d=>{
+    const el=document.createElement('div'); el.className='clue';
+    el.innerHTML=`<strong>${d.n}.</strong> ${d.clue} <small>(${d.answer.length})</small>`;
+    el.onclick=()=>{ state.dir='down'; state.active={r:d.row,c:d.col}; renderGrid(); };
     D.appendChild(el);
   });
 }
 
-/* =========================
-   Check / Reveal / Solve / Restart / Submit
-========================= */
+/* ========= Check / Reveal / Solve / Restart / Submit ========= */
 function checkAnswers(){
-  let correct=0, total=0;
+  let correct=0,total=0;
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       if(solution[r][c]===BLOCK) continue;
       total++;
-      const val = state.cells[r][c];
-      const cellEl = gridEl.children[r*SIZE+c];
-      if(val && val===solution[r][c]){ correct++; cellEl.classList.add('correct'); cellEl.classList.remove('wrong'); }
-      else if(val){ cellEl.classList.add('wrong'); cellEl.classList.remove('correct'); }
-      else { cellEl.classList.remove('correct','wrong'); }
+      const val=state.cells[r][c];
+      const cell=gridEl.children[r*SIZE+c];
+      if(val && val===solution[r][c]){ correct++; cell.classList.add('correct'); cell.classList.remove('wrong'); }
+      else if(val){ cell.classList.add('wrong'); cell.classList.remove('correct'); }
+      else cell.classList.remove('correct','wrong');
     }
   }
   state.score = Math.round((correct/total)*100);
   $('#score').textContent = state.score;
   if(correct===total){
-    const secs = Math.floor((Date.now()-state.startTs)/1000);
-    setTimeout(()=> alert(`🎉 Completed! Score ${state.score}% · Time ${secs}s`), 50);
+    const secs=Math.floor((Date.now()-state.start)/1000);
+    setTimeout(()=>alert(`Completed! Score ${state.score}% · Time ${secs}s`), 30);
   }
 }
 function revealOne(){
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       if(solution[r][c]!==BLOCK && !state.fixed[r][c] && state.cells[r][c]!==solution[r][c]){
-        state.cells[r][c]=solution[r][c];
-        renderGrid();
-        return;
+        state.cells[r][c]=solution[r][c]; renderGrid(); return;
       }
     }
   }
@@ -407,16 +361,16 @@ function revealOne(){
 function showSolution(){
   for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++)
     if(solution[r][c]!==BLOCK) state.cells[r][c]=solution[r][c];
-  renderGrid(); alert('✅ Full solution shown');
+  renderGrid(); alert('Solution shown.');
 }
 function restart(){
   for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++)
     if(!state.fixed[r][c] && solution[r][c]!==BLOCK) state.cells[r][c]='';
-  state.score=0; $('#score').textContent='0'; state.startTs=Date.now();
+  state.score=0; $('#score').textContent='0'; state.start=Date.now();
   renderGrid();
 }
 async function submitScore(){
-  const secs = Math.floor((Date.now()-state.startTs)/1000);
+  const secs = Math.floor((Date.now()-state.start)/1000);
   const name = prompt('Enter your name to record score:') || 'Anonymous';
   try{
     await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -426,19 +380,16 @@ async function submitScore(){
   }catch(e){ alert('Could not submit score.'); }
 }
 
-/* =========================
-   Leaderboard
-========================= */
+/* ========= Leaderboard ========= */
 async function fetchLeaderboard(){
   try{
     const res = await fetch(ENDPOINT + '?action=get_leaderboard');
     const json = await res.json();
-    const rows = (json.rows||[]).filter(r=>String(r.theme||'').toLowerCase().includes('crossword') || true)
-                                .slice(0,10);
+    const rows = (json.rows||[]).slice(0,10);
     const tbody = $('#boardBody'); tbody.innerHTML='';
     if(!rows.length){ tbody.innerHTML='<tr><td colspan="3">No scores yet.</td></tr>'; return; }
     rows.forEach(r=>{
-      const tr = document.createElement('tr');
+      const tr=document.createElement('tr');
       tr.innerHTML = `<td>${escapeHtml(r.player||'')}</td><td>${r.score??''}</td><td>${r.seconds??''}</td>`;
       tbody.appendChild(tr);
     });
@@ -446,21 +397,17 @@ async function fetchLeaderboard(){
     $('#boardBody').innerHTML='<tr><td colspan="3">Could not load.</td></tr>';
   }
 }
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;' }[m])) }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
 
-/* =========================
-   Timer
-========================= */
+/* ========= Timer ========= */
 setInterval(()=>{
-  const t=Math.floor((Date.now()-state.startTs)/1000);
+  const t=Math.floor((Date.now()-state.start)/1000);
   const mm=String(Math.floor(t/60)).padStart(2,'0');
   const ss=String(t%60).padStart(2,'0');
   $('#timer').textContent = `${mm}:${ss}`;
 }, 1000);
 
-/* =========================
-   Boot
-========================= */
+/* ========= Boot ========= */
 renderGrid();
 renderClues();
 fetchLeaderboard();
@@ -470,7 +417,6 @@ $('#reveal').onclick = revealOne;
 $('#solve').onclick = showSolution;
 $('#restart').onclick = restart;
 $('#submit').onclick = submitScore;
-
 </script>
 </body>
 </html>
