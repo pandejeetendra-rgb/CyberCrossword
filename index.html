@@ -117,12 +117,12 @@ const ENDPOINT = "https://script.google.com/macros/s/AKfycbwAeFpW8HcizrRrZVVRL4W
    You can move words or add more; blocks are generated automatically. */
 const SIZE = 11;
 const ACROSS = [
-  { n:1,  row:1, col:1, answer:"FIREWALL", clue:"Device that filters network traffic." },
-  { n:3,  row:3, col:2, answer:"ENCRYPT",  clue:"Convert plaintext into ciphertext." },
-  { n:5,  row:5, col:0, answer:"ROUTER",   clue:"Forwards packets between networks." },
-  { n:7,  row:6, col:3, answer:"MALWARE",  clue:"Malicious software umbrella term." },
-  { n:9,  row:8, col:3, answer:"PROXY",    clue:"Intermediary server that forwards requests." },
-  { n:11, row:9, col:1, answer:"PASSWORD", clue:"Secret string that controls access." },
+  { n:1,  row:1, col:1, answer:"FIREWALL", clue:"Device that filters network traffic." },   // c1..8
+  { n:2,  row:2, col:3, answer:"ENCRYPT",  clue:"Convert plaintext into ciphertext." },     // c3..9
+  { n:3,  row:3, col:1, answer:"ROUTER",   clue:"Forwards packets between networks." },     // c1..6
+  { n:4,  row:4, col:4, answer:"MALWARE",  clue:"Malicious software umbrella term." },      // c4..10
+  { n:5,  row:5, col:3, answer:"PROXY",    clue:"Intermediary server that forwards requests." }, // c3..7
+  { n:6,  row:6, col:2, answer:"PASSWORD", clue:"Secret string that controls access." }      // c2..9
 ];
 
 /* Optional: if a DOWN entry matches one of these keys, we show the specific clue. */
