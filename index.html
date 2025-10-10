@@ -5,46 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Cyber Crossword (Offline)</title>
 <style>
-  :root{
-    --bg:#f8fafc; --ink:#222; --muted:#555; --accent:#2563eb;
-    --block:#e5e7eb; --cell:#ffffff; --good:#16a34a; --bad:#dc2626;
+  :root {
+    --bg: #f8fafc;
+    --ink: #111;
+    --accent: #2563eb;
+    --block: #e5e7eb;
   }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font-family:"Segoe UI",Roboto,system-ui,sans-serif;}
-  .wrap{max-width:1200px;margin:0 auto;padding:20px;}
-  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;}
-  h1{margin:0;font-size:22px;}
-  .hud{display:flex;gap:10px;flex-wrap:wrap;}
-  .chip{background:#fff;border:1px solid #ddd;border-radius:999px;padding:6px 10px;}
-  .layout{display:grid;gap:16px;}
-  @media(min-width:960px){.layout{grid-template-columns:1fr 350px;}}
-  .card{background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,.05);}
-  .card .body{padding:12px;}
-  .grid{
-    --n:15;
-    display:grid;
-    grid-template-columns:repeat(var(--n),1fr);
-    width:min(95vw,600px);
-    aspect-ratio:1;
-    border:3px solid #000;
-    margin:10px auto;
-    user-select:none;
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", Roboto, sans-serif;
   }
-  .cell{border:1px solid #bbb;display:flex;align-items:center;justify-content:center;
-        font-weight:700;font-size:20px;background:var(--cell);position:relative;cursor:pointer;}
-  .cell.block{background:var(--block);cursor:default;}
-  .num{position:absolute;top:1px;left:3px;font-size:10px;color:#333;}
-  .active{outline:3px solid var(--accent);outline-offset:-3px;}
-  .wordHL{box-shadow:inset 0 0 0 4px rgba(37,99,235,.15);}
-  .actions{text-align:center;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
-  button{padding:10px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;}
-  button.primary{background:var(--accent);color:#fff;border:none;}
-  .clues{padding:10px;}
-  .clues h3{margin:6px 0;}
-  .clue{padding:6px;border-radius:8px;margin:4px 0;cursor:pointer;}
-  .clue:hover{background:#f0f4ff;}
-  footer{text-align:center;color:#666;font-size:13px;margin-top:12px;}
+  .wrap {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  h1 {
+    margin: 0;
+    font-size: 22px;
+  }
+  .hud {
+    display: flex;
+    gap: 10px;
+  }
+  .chip {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    padding: 6px 10px;
+  }
+  .layout {
+    display: grid;
+    gap: 20px;
+  }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: 1fr 350px;
+    }
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  .card .body {
+    padding: 10px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  button {
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    width: min(95vw, 600px);
+    aspect-ratio: 1;
+    margin: 10px auto;
+    border: 3px solid #000;
+  }
+  .cell {
+    border: 1px solid #aaa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 20px;
+    position: relative;
+    background: white;
+  }
+  .cell.block {
+    background: var(--block);
+  }
+  .num {
+    position: absolute;
+    top: 1px;
+    left: 3px;
+    font-size: 10px;
+    color: #333;
+  }
+  .clue {
+    padding: 4px;
+    cursor: pointer;
+  }
+  .clue:hover {
+    background: #eef3ff;
+  }
 </style>
 </head>
 <body>
@@ -53,7 +122,6 @@
     <h1>🧩 Cyber Crossword (Offline)</h1>
     <div class="hud">
       <div class="chip">⭐ Score: <span id="score">0</span></div>
-      <div class="chip">⏱ <span id="timer">00:00</span></div>
       <div class="chip">🔓 Level: <span id="level">1</span>/3</div>
       <div class="chip">🧩 Words: <span id="wordsCount">0</span></div>
     </div>
@@ -62,14 +130,12 @@
   <section class="layout">
     <div class="card">
       <div class="body">
-        <div class="actions" style="justify-content:flex-start;margin-bottom:6px;">
+        <div class="actions">
           <button class="primary" id="level1">Level 1</button>
           <button id="level2">Level 2</button>
           <button id="level3">Level 3</button>
         </div>
         <div id="grid" class="grid"></div>
-        <input type="text" id="hiddenInput" maxlength="1"
-               style="position:absolute;opacity:0;pointer-events:none;">
         <div class="actions">
           <button id="check">Check</button>
           <button id="reveal">Reveal</button>
@@ -80,33 +146,118 @@
     </div>
 
     <aside class="card">
-      <div class="body clues">
+      <div class="body">
         <h3>Across</h3>
         <div id="cluesAcross"></div>
-        <h3 style="margin-top:10px;">Down</h3>
+        <h3>Down</h3>
         <div id="cluesDown"></div>
       </div>
     </aside>
   </section>
-
-  <footer>Click a cell or clue to focus. Tap same cell again to switch direction.</footer>
 </div>
 
 <script>
-/* ========== Data: Cybersecurity clues ========== */
 const LEVELS = [
   {
-    words:[
-      {clue:"Protects network by filtering traffic",ans:"FIREWALL"},
-      {clue:"Process of scrambling data",ans:"ENCRYPTION"},
-      {clue:"Opposite of encryption",ans:"DECRYPTION"},
-      {clue:"Malicious software",ans:"MALWARE"},
-      {clue:"Tricking users by fake emails",ans:"PHISHING"},
-      {clue:"Self-replicating malware",ans:"WORM"},
-      {clue:"Pretends to be useful software",ans:"TROJAN"},
-      {clue:"Program that records keystrokes",ans:"KEYLOGGER"},
-      {clue:"Attack that floods a system",ans:"DOS"},
-      {clue:"Ensures data is accessible",ans:"AVAILABILITY"},
-      {clue:"Ensures data remains accurate",ans:"INTEGRITY"},
-      {clue:"Prevents unauthorized disclosure",ans:"CONFIDENTIALITY"}
+    words: [
+      { clue: "Protects network traffic", ans: "FIREWALL" },
+      { clue: "Converts data into unreadable form", ans: "ENCRYPTION" },
+      { clue: "Opposite of encryption", ans: "DECRYPTION" },
+      { clue: "Malicious software", ans: "MALWARE" },
+      { clue: "Deceptive email attack", ans: "PHISHING" },
+      { clue: "Self-replicating program", ans: "WORM" },
+      { clue: "Fake useful program", ans: "TROJAN" },
+      { clue: "Records keystrokes", ans: "KEYLOGGER" },
+      { clue: "Ensures accuracy of data", ans: "INTEGRITY" },
+      { clue: "Ensures data accessibility", ans: "AVAILABILITY" }
     ]
+  },
+  {
+    words: [
+      { clue: "Encrypts Internet connection", ans: "VPN" },
+      { clue: "Pair of keys for encryption", ans: "KEYPAIR" },
+      { clue: "Security test simulating attacks", ans: "PENTEST" },
+      { clue: "Software removing viruses", ans: "ANTIVIRUS" },
+      { clue: "Layers of protection", ans: "DEFENSE" },
+      { clue: "Verifies user identity", ans: "AUTHENTICATION" },
+      { clue: "Ensures authorized use", ans: "ACCESSCONTROL" },
+      { clue: "Saves data copies", ans: "BACKUP" },
+      { clue: "Detects suspicious activity", ans: "IDS" },
+      { clue: "Prevents intrusion", ans: "IPS" }
+    ]
+  },
+  {
+    words: [
+      { clue: "Demands payment after infection", ans: "RANSOMWARE" },
+      { clue: "Illegal copying of software", ans: "PIRACY" },
+      { clue: "Fake online identity", ans: "IMPERSONATION" },
+      { clue: "Alters data before entry", ans: "DATADIDDLING" },
+      { clue: "Online harassment", ans: "CYBERSTALKING" },
+      { clue: "Unauthorized site change", ans: "DEFACEMENT" },
+      { clue: "Network spying", ans: "ESPIONAGE" },
+      { clue: "Floods network traffic", ans: "DDOS" },
+      { clue: "Ensures message authenticity", ans: "SIGNATURE" },
+      { clue: "Cyber law in India", ans: "ITACT2000" }
+    ]
+  }
+];
+
+const gridEl = document.getElementById("grid");
+const acrossEl = document.getElementById("cluesAcross");
+const downEl = document.getElementById("cluesDown");
+
+function makeGrid(level) {
+  const n = 15;
+  const g = Array.from({ length: n }, () => Array(n).fill("#"));
+  const words = LEVELS[level].words.slice(0, 10);
+  let r = 2;
+  words.forEach((w, i) => {
+    const word = w.ans.toUpperCase();
+    if (r + word.length >= n) r = 2;
+    for (let j = 0; j < word.length; j++) g[r + j][i + 2] = word[j];
+    r += 2;
+  });
+  renderGrid(g, words);
+}
+
+function renderGrid(grid, words) {
+  gridEl.innerHTML = "";
+  const n = grid.length;
+  let clueNum = 1;
+  acrossEl.innerHTML = "";
+  downEl.innerHTML = "";
+  for (let i = 0; i < words.length; i++) {
+    const d = document.createElement("div");
+    d.className = "clue";
+    d.textContent = clueNum + ". " + words[i].clue;
+    if (i % 2 === 0) acrossEl.appendChild(d);
+    else downEl.appendChild(d);
+    clueNum++;
+  }
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const val = grid[r][c];
+      const div = document.createElement("div");
+      div.className = "cell" + (val === "#" ? " block" : "");
+      if (val !== "#") {
+        div.textContent = val;
+        if (r === 2 || c === 2) {
+          const ndiv = document.createElement("div");
+          ndiv.className = "num";
+          ndiv.textContent = (r + c) % 5 === 0 ? (r + c) / 2 : "";
+          div.appendChild(ndiv);
+        }
+      }
+      gridEl.appendChild(div);
+    }
+  }
+}
+
+document.getElementById("level1").onclick = () => makeGrid(0);
+document.getElementById("level2").onclick = () => makeGrid(1);
+document.getElementById("level3").onclick = () => makeGrid(2);
+
+makeGrid(0);
+</script>
+</body>
+</html>
