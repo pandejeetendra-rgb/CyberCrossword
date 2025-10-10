@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Cyber Crossword v3 — Level 1</title>
 <style>
-  :root {
+  :root{
     --bg:#f8fafc; --ink:#111; --accent:#2563eb;
     --block:#e5e7eb; --path:#dbeafe; /* light blue */
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,system-ui,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Segoe UI,Roboto,system-ui,Arial,sans-serif}
   .wrap{max-width:1200px;margin:auto;padding:20px}
   header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
   h1{margin:0;font-size:22px}
@@ -24,26 +24,17 @@
   .card .body{padding:12px}
 
   .grid{
-    display:grid;
-    grid-template-columns:repeat(15,1fr);
-    width:min(95vw,600px);
-    aspect-ratio:1;
-    margin:10px auto;
-    border:3px solid #000;
-    user-select:none;
+    display:grid;grid-template-columns:repeat(15,1fr);
+    width:min(95vw,600px);aspect-ratio:1;border:3px solid #000;margin:10px auto;user-select:none
   }
   .cell{
-    border:1px solid #b8beca;
-    display:flex;align-items:center;justify-content:center;
+    border:1px solid #b8beca;display:flex;align-items:center;justify-content:center;
     font-weight:800;font-size:20px;background:#fff;position:relative;cursor:pointer
   }
   .cell.block{background:var(--block);cursor:default}
   .cell.active{outline:3px solid var(--accent)}
   .cell.path{background:var(--path)}
-  .num{
-    position:absolute;top:2px;left:4px;
-    font-size:10px;color:#333;font-weight:700;pointer-events:none;
-  }
+  .num{position:absolute;top:2px;left:4px;font-size:10px;color:#333;font-weight:700;pointer-events:none}
 
   .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
   button{padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer}
@@ -53,15 +44,16 @@
   .clue{padding:6px;border-radius:8px;cursor:pointer}
   .clue:hover{background:#eef3ff}
   .clue.active{background:#e6efff;border-left:3px solid var(--accent)}
-  footer{text-align:center;color:#666;font-size:13px;margin-top:10px}
 
-  table{width:100%;font-size:14px;border-collapse:collapse}
+  table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{padding:6px;border-bottom:1px solid #eef2f7;text-align:left}
 
   .keyboard{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:10px}
   .key{width:30px;height:36px;line-height:34px;text-align:center;border:1px solid #aaa;border-radius:6px;background:#fff;cursor:pointer}
   .key:hover{background:var(--accent);color:#fff}
   .key.back{width:64px}
+
+  footer{text-align:center;color:#666;font-size:13px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -76,11 +68,9 @@
   </header>
 
   <section class="layout">
-    <!-- GRID -->
     <div class="card">
       <div class="body">
         <div id="grid" class="grid"></div>
-        <!-- Hidden input keeps mobile keyboards working if needed -->
         <input id="hiddenInput" type="text" maxlength="1" style="position:absolute;opacity:0;pointer-events:none" />
         <div class="actions">
           <button id="check">Check</button>
@@ -93,7 +83,6 @@
       </div>
     </div>
 
-    <!-- CLUES + LEADERBOARD -->
     <aside class="card">
       <div class="body clues">
         <h3>Across</h3>
@@ -110,35 +99,32 @@
     </aside>
   </section>
 
-  <footer>
-    Click a clue to highlight its path. Type or tap letters. Cursor auto-moves in the clue’s direction.
-  </footer>
+  <footer>Click a clue to highlight its path. Type or tap letters. Cursor auto-moves in the clue’s direction.</footer>
 </div>
 
 <script>
-/* ========= Config ========= */
+/* ---------------- Apps Script endpoint ---------------- */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbxbYSzhsxmadZwawvEDr8ea37Z0n1VLD6SbTYV7QhAp4bVQojhoQe_ZIoHYbL4yZEZ57g/exec";
 
-/* ========= Level 1 entries (10 cybersecurity words) =========
-   We'll build the grid from these entries so numbering and paths are exact.
-   Coords are 0-based: r = row, c = col, dir: 'A' (across) or 'D' (down)
+/* ---------------- Crossword entries (interlocked) ----------------
+   15x15 grid. r,c are 0-based. dir: 'A' (across) or 'D' (down)
+   These coordinates are chosen so words intersect like a true crossword.
 */
 const ENTRIES = [
-  { num:1, dir:'A', r:0,  c:0,  answer:'FIREWALL', clue:'Protects network traffic' },
-  { num:2, dir:'D', r:0,  c:3,  answer:'ENCRYPTION', clue:'Converts data into unreadable form' },
-  { num:3, dir:'D', r:0,  c:9,  answer:'DECRYPTION', clue:'Opposite of encryption' },
-  { num:4, dir:'A', r:10, c:1,  answer:'MALWARE', clue:'Malicious software' },
-  { num:5, dir:'A', r:11, c:5,  answer:'PHISHING', clue:'Deceptive email attack' },
-  { num:6, dir:'D', r:0,  c:12, answer:'WORM', clue:'Self-replicating program' },
-  { num:7, dir:'D', r:4,  c:13, answer:'TROJAN', clue:'Fake useful program' },
-  { num:8, dir:'A', r:12, c:2,  answer:'KEYLOGGER', clue:'Records keystrokes' },
-  { num:9, dir:'D', r:4,  c:0,  answer:'INTEGRITY', clue:'Ensures accuracy of data' },
-  { num:10,dir:'A', r:14, c:0,  answer:'AVAILABILITY', clue:'Ensures data accessibility' }
+  { num:1,  dir:'A', r:1,  c:1,  answer:'FIREWALL',     clue:'Protects network traffic' },           // crosses 2D at E, 9D at F
+  { num:2,  dir:'D', r:1,  c:4,  answer:'ENCRYPTION',   clue:'Converts data into unreadable form' }, // crosses 1A at E, 3D later, 8A later
+  { num:3,  dir:'D', r:1,  c:8,  answer:'DECRYPTION',   clue:'Opposite of encryption' },             // crosses 1A at L? no, crosses 5A later
+  { num:4,  dir:'A', r:5,  c:2,  answer:'MALWARE',      clue:'Malicious software' },                 // crosses 2D at A, 6D at W, 7D at A
+  { num:5,  dir:'A', r:7,  c:6,  answer:'PHISHING',     clue:'Deceptive email attack' },             // crosses 3D at I, 6D at H
+  { num:6,  dir:'D', r:4,  c:8,  answer:'WORM',         clue:'Self-replicating program' },           // crosses 5A at H (row7 col8)
+  { num:7,  dir:'D', r:2,  c:6,  answer:'TROJAN',       clue:'Fake useful program' },                // crosses 4A at A (row5 col6), 5A at O (row7 col6)
+  { num:8,  dir:'A', r:10, c:3,  answer:'KEYLOGGER',    clue:'Records keystrokes' },                 // crosses 2D at G (row10 col4), 9D at E (row10 col3)
+  { num:9,  dir:'D', r:8,  c:3,  answer:'INTEGRITY',    clue:'Ensures accuracy of data' },           // crosses 8A at K/E, 10A at I
+  { num:10, dir:'A', r:13, c:1,  answer:'AVAILABILITY', clue:'Ensures data accessibility' }          // crosses 9D at I (row13 col3)
 ];
 
-/* ========= Build solution grid from entries ========= */
-const N = 15;
-const BLOCK='.';
+/* -------------- Build solution grid from entries -------------- */
+const N = 15, BLOCK='.';
 let SOL = Array.from({length:N},()=>Array(N).fill(BLOCK));
 let FILL = Array.from({length:N},()=>Array(N).fill(''));
 let START_NUM = Array.from({length:N},()=>Array(N).fill(null));
@@ -146,325 +132,256 @@ let START_NUM = Array.from({length:N},()=>Array(N).fill(null));
 function inBounds(r,c){return r>=0&&c>=0&&r<N&&c<N;}
 
 function placeEntries(){
-  // Reset
   SOL = Array.from({length:N},()=>Array(N).fill(BLOCK));
   FILL = Array.from({length:N},()=>Array(N).fill(''));
   START_NUM = Array.from({length:N},()=>Array(N).fill(null));
-
   for(const e of ENTRIES){
-    const word = e.answer.toUpperCase().replace(/[^A-Z]/g,'');
-    let r=e.r, c=e.c;
-    START_NUM[r][c]=e.num; // numbering in first cell
-    for(let i=0;i<word.length;i++){
-      if(!inBounds(r,c)) { console.warn('Out of bounds placement', e); break; }
+    const w=e.answer.toUpperCase().replace(/[^A-Z]/g,'');
+    let r=e.r, c=e.c; START_NUM[r][c]=e.num;
+    for(let i=0;i<w.length;i++){
+      if(!inBounds(r,c)) { console.warn('OOB',e); break; }
       const cur = SOL[r][c];
-      if(cur!==BLOCK && cur!==word[i]) { console.warn('Conflict at', r,c, 'for', e); }
-      SOL[r][c]=word[i];
+      if(cur!==BLOCK && cur!==w[i]) { console.warn('Conflict @',r,c,'for',e.answer); }
+      SOL[r][c]=w[i];
       if(e.dir==='A') c++; else r++;
     }
   }
 }
 placeEntries();
 
-/* ========= Build entry map for fast lookup ========= */
-let CELL_TO_ENTRIES = Array.from({length:N},()=>Array(N).fill(null).map(()=>({A:null,D:null})));
+/* -------- map cells -> which entry (across/down) they belong to -------- */
+let MAP = Array.from({length:N},()=>Array.from({length:N},()=>({A:null,D:null})));
 function mapCells(){
-  // Fill mapping for each cell -> which across/down entry it belongs to
+  MAP = Array.from({length:N},()=>Array.from({length:N},()=>({A:null,D:null})));
   for(const e of ENTRIES){
-    const word = e.answer.toUpperCase().replace(/[^A-Z]/g,'');
+    const w=e.answer.toUpperCase().replace(/[^A-Z]/g,'');
     let r=e.r, c=e.c;
-    for(let i=0;i<word.length;i++){
+    for(let i=0;i<w.length;i++){
       if(!inBounds(r,c)) break;
-      if(!CELL_TO_ENTRIES[r][c]) CELL_TO_ENTRIES[r][c] = {A:null, D:null};
-      CELL_TO_ENTRIES[r][c][e.dir] = e;
+      MAP[r][c][e.dir] = e;
       if(e.dir==='A') c++; else r++;
     }
   }
 }
 mapCells();
 
-/* ========= DOM refs ========= */
-const gridEl = document.getElementById('grid');
-const cluesAcrossEl = document.getElementById('cluesAcross');
-const cluesDownEl = document.getElementById('cluesDown');
-const kbEl = document.getElementById('kb');
+/* ---------------- DOM ---------------- */
+const gridEl      = document.getElementById('grid');
+const cluesAcross = document.getElementById('cluesAcross');
+const cluesDown   = document.getElementById('cluesDown');
+const keyboardEl  = document.getElementById('kb');
 const hiddenInput = document.getElementById('hiddenInput');
-const scoreEl = document.getElementById('score');
-const boardEl = document.getElementById('leaderboard');
+const scoreEl     = document.getElementById('score');
+const lbBody      = document.getElementById('leaderboard');
 
-/* ========= Render grid ========= */
-let active = null;          // {r,c}
-let activeEntry = null;     // entry object from ENTRIES
-let activePath = [];        // [{r,c}...]
+/* ---------------- rendering ---------------- */
+let active = null;      // {r,c}
+let activeEntry = null; // entry
+let path = [];          // [{r,c}]
 
+function cellInEntry(e,r,c){
+  if(!e) return false;
+  let rr=e.r, cc=e.c;
+  for(let i=0;i<e.answer.length;i++){
+    if(rr===r && cc===c) return true;
+    if(e.dir==='A') cc++; else rr++;
+  }
+  return false;
+}
+function computePath(){
+  path=[];
+  if(!activeEntry) return;
+  let rr=activeEntry.r, cc=activeEntry.c;
+  for(let i=0;i<activeEntry.answer.length;i++){
+    path.push({r:rr,c:cc});
+    if(activeEntry.dir==='A') cc++; else rr++;
+  }
+}
 function renderGrid(){
   gridEl.innerHTML='';
   for(let r=0;r<N;r++){
     for(let c=0;c<N;c++){
-      const hasLetter = SOL[r][c]!==BLOCK;
-      const cell = document.createElement('div');
-      cell.className = 'cell' + (hasLetter?'':' block');
-
-      // Path highlight
-      if(hasLetter && activePath.some(p=>p.r===r&&p.c===c)) cell.classList.add('path');
-
-      // Clue start number
-      const n = START_NUM[r][c];
-      if(hasLetter && n!=null){
-        const nm = document.createElement('div');
-        nm.className='num'; nm.textContent = n;
-        cell.appendChild(nm);
-      }
-
-      // Show user-entered char
-      if(hasLetter){
+      const letter = SOL[r][c];
+      const has = letter!==BLOCK;
+      const cell=document.createElement('div');
+      cell.className='cell'+(has?'':' block');
+      if(has){
+        if(path.some(p=>p.r===r&&p.c===c)) cell.classList.add('path');
+        const n=START_NUM[r][c];
+        if(n!=null){ const nm=document.createElement('div'); nm.className='num'; nm.textContent=n; cell.appendChild(nm); }
         cell.appendChild(document.createTextNode(FILL[r][c]||''));
         cell.onclick=()=>{
           active={r,c};
-          // Choose entry by priority: if current activeEntry includes this cell, keep it.
-          // Else prefer across if available, otherwise down.
-          const map = CELL_TO_ENTRIES[r][c]||{A:null,D:null};
+          const m = MAP[r][c];
           if(!activeEntry || !cellInEntry(activeEntry,r,c)){
-            activeEntry = map.A || map.D || activeEntry;
+            activeEntry = m.A || m.D || activeEntry;
           }
           computePath(); renderGrid(); focusCell();
         };
       }
-
-      // Active focus ring
       if(active && active.r===r && active.c===c) cell.classList.add('active');
-
       gridEl.appendChild(cell);
     }
   }
 }
-
-function cellInEntry(entry,r,c){
-  if(!entry) return false;
-  let rr=entry.r, cc=entry.c;
-  for(let i=0;i<entry.answer.length;i++){
-    if(rr===r && cc===c) return true;
-    if(entry.dir==='A') cc++; else rr++;
-  }
-  return false;
+function renderClues(){
+  cluesAcross.innerHTML=''; cluesDown.innerHTML='';
+  ENTRIES.filter(e=>e.dir==='A').sort((a,b)=>a.num-b.num).forEach(e=>{
+    const d=document.createElement('div'); d.className='clue';
+    d.innerHTML=`<strong>${e.num}.</strong> ${e.clue} <small>(${e.answer.length})</small>`;
+    d.onclick=()=>{
+      activeEntry=e; computePath();
+      active = path.find(p=>!FILL[p.r][p.c]) || path[0];
+      renderGrid(); focusCell();
+      document.querySelectorAll('.clue').forEach(n=>n.classList.remove('active'));
+      d.classList.add('active');
+    };
+    cluesAcross.appendChild(d);
+  });
+  ENTRIES.filter(e=>e.dir==='D').sort((a,b)=>a.num-b.num).forEach(e=>{
+    const d=document.createElement('div'); d.className='clue';
+    d.innerHTML=`<strong>${e.num}.</strong> ${e.clue} <small>(${e.answer.length})</small>`;
+    d.onclick=()=>{
+      activeEntry=e; computePath();
+      active = path.find(p=>!FILL[p.r][p.c]) || path[0];
+      renderGrid(); focusCell();
+      document.querySelectorAll('.clue').forEach(n=>n.classList.remove('active'));
+      d.classList.add('active');
+    };
+    cluesDown.appendChild(d);
+  });
 }
 
-function computePath(){
-  activePath=[];
-  if(!activeEntry) return;
-  let rr=activeEntry.r, cc=activeEntry.c;
-  for(let i=0;i<activeEntry.answer.length;i++){
-    activePath.push({r:rr,c:cc});
-    if(activeEntry.dir==='A') cc++; else rr++;
-  }
-}
-
+/* ---------------- input & movement ---------------- */
 function focusCell(){
-  // if active not in path, set to first empty in path, else keep
   if(!activeEntry) return;
-  if(!active || !cellInEntry(activeEntry, active.r, active.c)){
-    const firstEmpty = activePath.find(p=>!FILL[p.r][p.c]);
-    active = firstEmpty || activePath[0];
+  if(!active || !cellInEntry(activeEntry,active.r,active.c)){
+    active = path.find(p=>!FILL[p.r][p.c]) || path[0];
   }
   hiddenInput.focus();
 }
-
-/* ========= Clues ========= */
-function renderClues(){
-  cluesAcrossEl.innerHTML='';
-  cluesDownEl.innerHTML='';
-  const across = ENTRIES.filter(e=>e.dir==='A').sort((a,b)=>a.num-b.num);
-  const down   = ENTRIES.filter(e=>e.dir==='D').sort((a,b)=>a.num-b.num);
-
-  across.forEach(e=>{
-    const div=document.createElement('div'); div.className='clue';
-    div.innerHTML = `<strong>${e.num}.</strong> ${e.clue} <small>(${e.answer.length})</small>`;
-    div.onclick=()=>{
-      activeEntry=e; computePath();
-      // move focus to first empty cell in this word
-      active = activePath.find(p=>!FILL[p.r][p.c]) || activePath[0];
-      renderGrid(); focusCell();
-      // mark active clue
-      document.querySelectorAll('.clue').forEach(n=>n.classList.remove('active'));
-      div.classList.add('active');
-    };
-    cluesAcrossEl.appendChild(div);
-  });
-  down.forEach(e=>{
-    const div=document.createElement('div'); div.className='clue';
-    div.innerHTML = `<strong>${e.num}.</strong> ${e.clue} <small>(${e.answer.length})</small>`;
-    div.onclick=()=>{
-      activeEntry=e; computePath();
-      active = activePath.find(p=>!FILL[p.r][p.c]) || activePath[0];
-      renderGrid(); focusCell();
-      document.querySelectorAll('.clue').forEach(n=>n.classList.remove('active'));
-      div.classList.add('active');
-    };
-    cluesDownEl.appendChild(div);
-  });
-}
-
-/* ========= Input handling (keyboard + touch) ========= */
-function advance(){
+function moveNext(){
   if(!activeEntry||!active) return;
-  // find index in path
-  let idx = activePath.findIndex(p=>p.r===active.r && p.c===active.c);
-  if(idx===-1) idx=0;
-  // move forward within the same word
-  if(idx < activePath.length-1){
-    active = activePath[idx+1];
-  } else {
-    // stay at last cell
-  }
+  const idx = path.findIndex(p=>p.r===active.r&&p.c===active.c);
+  if(idx>=0 && idx<path.length-1) active = path[idx+1];
 }
-
+function movePrev(){
+  if(!activeEntry||!active) return;
+  const idx = path.findIndex(p=>p.r===active.r&&p.c===active.c);
+  if(idx>0) active = path[idx-1];
+}
+function putChar(ch){
+  if(!activeEntry||!active) return;
+  FILL[active.r][active.c]=ch.toUpperCase();
+  renderGrid(); moveNext(); renderGrid(); focusCell();
+}
 function backspace(){
   if(!activeEntry||!active) return;
-  let idx = activePath.findIndex(p=>p.r===active.r && p.c===active.c);
-  if(idx===-1) idx=0;
-  FILL[active.r][active.c]='';
-  if(idx>0){ active = activePath[idx-1]; }
-  renderGrid(); focusCell();
+  FILL[active.r][active.c]=''; renderGrid(); movePrev(); renderGrid(); focusCell();
 }
-
-function handleChar(ch){
-  if(!activeEntry||!active) return;
-  FILL[active.r][active.c] = ch.toUpperCase();
-  renderGrid(); // redraw to show letter
-  advance();
-  renderGrid(); focusCell();
-}
-
-document.addEventListener('keydown', (e)=>{
-  if(!activeEntry) return;
-  if(e.key.length===1 && /[a-zA-Z]/.test(e.key)){
-    e.preventDefault(); handleChar(e.key);
-  } else if(e.key==='Backspace'){
-    e.preventDefault(); backspace();
-  } else if(e.key==='ArrowRight' || e.key==='ArrowDown' || e.key==='ArrowLeft' || e.key==='ArrowUp'){
+document.addEventListener('keydown',e=>{
+  if(e.key.length===1 && /[a-zA-Z]/.test(e.key)){ e.preventDefault(); putChar(e.key); }
+  else if(e.key==='Backspace'){ e.preventDefault(); backspace(); }
+  else if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowUp'){
     e.preventDefault();
-    // Manual navigation inside the active word only
-    let idx = activePath.findIndex(p=>p.r===active.r && p.c===active.c);
-    if(idx===-1) idx=0;
-    if((e.key==='ArrowRight' && activeEntry.dir==='A') || (e.key==='ArrowDown' && activeEntry.dir==='D')){
-      if(idx<activePath.length-1) active = activePath[idx+1];
-    }
-    if((e.key==='ArrowLeft'  && activeEntry.dir==='A') || (e.key==='ArrowUp'   && activeEntry.dir==='D')){
-      if(idx>0) active = activePath[idx-1];
-    }
+    // only move within the active word, respecting its direction
+    if(!activeEntry) return;
+    if((e.key==='ArrowRight' && activeEntry.dir==='A')||(e.key==='ArrowDown'&&activeEntry.dir==='D')) moveNext();
+    if((e.key==='ArrowLeft'  && activeEntry.dir==='A')||(e.key==='ArrowUp'  && activeEntry.dir==='D')) movePrev();
     renderGrid(); focusCell();
   }
 });
-
-// Hidden input (keeps soft keyboard available if needed)
-hiddenInput.addEventListener('input', ()=>{
-  const ch = hiddenInput.value.toUpperCase();
-  hiddenInput.value='';
-  if(/[A-Z]/.test(ch)) handleChar(ch);
+hiddenInput.addEventListener('input',()=>{
+  const ch = hiddenInput.value.toUpperCase(); hiddenInput.value='';
+  if(/[A-Z]/.test(ch)) putChar(ch);
 });
 
-/* ========= On-screen keyboard ========= */
+/* ---------------- keyboard UI ---------------- */
 function buildKeyboard(){
   const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  kbEl.innerHTML='';
+  keyboardEl.innerHTML='';
   letters.split('').forEach(ch=>{
-    const b=document.createElement('div');
-    b.className='key'; b.textContent=ch;
-    b.onclick=()=>handleChar(ch);
-    kbEl.appendChild(b);
+    const b=document.createElement('div'); b.className='key'; b.textContent=ch; b.onclick=()=>putChar(ch); keyboardEl.appendChild(b);
   });
-  const bk=document.createElement('div');
-  bk.className='key back'; bk.textContent='⌫';
-  bk.onclick=()=>backspace();
-  kbEl.appendChild(bk);
+  const bk=document.createElement('div'); bk.className='key back'; bk.textContent='⌫'; bk.onclick=backspace; keyboardEl.appendChild(bk);
 }
 
-/* ========= Buttons ========= */
+/* ---------------- buttons ---------------- */
 document.getElementById('check').onclick=()=>{
   let correct=0,total=0;
-  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
-    if(SOL[r][c]!==BLOCK){
-      total++;
-      if(FILL[r][c]===SOL[r][c]) correct++;
-    }
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(SOL[r][c]!=='.'){ total++; if(FILL[r][c]===SOL[r][c]) correct++; }
   }
-  const pct = Math.round((correct/total)*100);
-  scoreEl.textContent = pct;
+  const pct=Math.round((correct/total)*100);
+  scoreEl.textContent=pct;
   alert(pct===100?'✅ Perfect! 100%':'Score: '+pct+'%');
 };
-
 document.getElementById('reveal').onclick=()=>{
-  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
-    if(SOL[r][c]!==BLOCK && !FILL[r][c]){
-      FILL[r][c]=SOL[r][c];
-      renderGrid(); return;
-    }
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(SOL[r][c]!=='.' && !FILL[r][c]){ FILL[r][c]=SOL[r][c]; renderGrid(); return; }
   }
 };
-
 document.getElementById('solve').onclick=()=>{
-  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
-    if(SOL[r][c]!==BLOCK) FILL[r][c]=SOL[r][c];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(SOL[r][c]!=='.') FILL[r][c]=SOL[r][c];
   }
   renderGrid();
 };
-
 document.getElementById('restart').onclick=()=>{
   placeEntries(); mapCells();
   FILL = Array.from({length:N},()=>Array(N).fill(''));
-  active=null; activeEntry=null; activePath=[];
+  active=null; activeEntry=null; path=[];
   renderGrid(); renderClues();
 };
 
-/* ========= Leaderboard ========= */
-async function loadBoard(){
+/* ---------------- leaderboard ---------------- */
+async function loadLeaderboard(){
   try{
     const res = await fetch(ENDPOINT + "?action=get_leaderboard");
     const data = await res.json();
-    const rows = (data.rows||[]).slice(0,10);
-    boardEl.innerHTML='';
-    if(!rows.length){ boardEl.innerHTML='<tr><td colspan="3">No scores yet.</td></tr>'; return; }
-    rows.forEach(r=>{
+    lbBody.innerHTML='';
+    (data.rows||[]).slice(0,10).forEach(r=>{
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>${r.player||''}</td><td>${r.score||''}</td><td>${r.seconds||''}</td>`;
-      boardEl.appendChild(tr);
+      lbBody.appendChild(tr);
     });
-  }catch(e){
-    boardEl.innerHTML='<tr><td colspan="3">Could not load.</td></tr>';
+    if(!lbBody.children.length) lbBody.innerHTML='<tr><td colspan="3">No scores yet.</td></tr>';
+  }catch(err){
+    lbBody.innerHTML='<tr><td colspan="3">Could not load.</td></tr>';
   }
 }
 
 document.getElementById('submit').onclick=async()=>{
-  // compute score and time
+  // calc score
   let correct=0,total=0;
-  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
-    if(SOL[r][c]!==BLOCK){ total++; if(FILL[r][c]===SOL[r][c]) correct++; }
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(SOL[r][c]!=='.'){ total++; if(FILL[r][c]===SOL[r][c]) correct++; }
   }
   const pct=Math.round((correct/total)*100);
   scoreEl.textContent=pct;
   const seconds = Math.floor((Date.now()-window.__startTs)/1000);
-  const name = prompt('Enter your name for the leaderboard:') || 'Anonymous';
+  const name = prompt('Enter your name (for leaderboard):') || 'Anonymous';
   try{
-    await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'add_score',player:name,theme:'cyber-crossword-l1',score:pct,seconds})});
+    const res = await fetch(ENDPOINT,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'add_score',player:name,theme:'cyber-crossword-l1',score:pct,seconds})
+    });
+    if(!res.ok){ throw new Error('HTTP '+res.status); }
     alert('✅ Score submitted!');
-    loadBoard();
-  }catch(e){ alert('⚠️ Could not submit score. Check your Apps Script deployment.'); }
+    loadLeaderboard();
+  }catch(e){
+    alert('⚠️ Could not submit score. Check your Apps Script deployment.');
+  }
 };
 
-/* ========= Boot ========= */
+/* ---------------- boot ---------------- */
 function init(){
-  placeEntries(); mapCells();
-  buildKeyboard();
-  renderClues();
-  // default: focus first across clue
-  activeEntry = ENTRIES.find(e=>e.dir==='A' && e.num===1);
-  computePath();
-  active = activePath[0];
-  renderGrid();
-  hiddenInput.focus();
+  placeEntries(); mapCells(); buildKeyboard(); renderClues();
+  // default focus: first across clue
+  activeEntry = ENTRIES.find(e=>e.dir==='A'&&e.num===1);
+  computePath(); active = path[0]; renderGrid(); hiddenInput.focus();
   window.__startTs = Date.now();
-  loadBoard();
+  loadLeaderboard();
 }
 init();
 </script>
