@@ -3,30 +3,30 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cyber Crossword – Interlocking & Numbered</title>
+<title>Cyber Crossword v2 – Multi-Level (Offline)</title>
 <style>
   :root{
-    --bg:#f8f8f8; --ink:#222; --muted:#666; --accent:#1f6ef3;
-    --grid:#000; --cell:#fff; --block:#d9d9d9; --good:#0f9d58; --bad:#d93025;
+    --bg:#f7f7f9; --ink:#222; --muted:#666; --accent:#1f6ef3;
+    --grid:#000; --cell:#fff; --block:#e3e6ea; --good:#0f9d58; --bad:#d93025;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.5 Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{max-width:1020px;margin:0 auto;padding:16px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.55 "Segoe UI",Roboto,system-ui,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
   header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   h1{margin:0;font-size:20px}
-  .hud{display:flex;gap:10px;flex-wrap:wrap}
-  .chip{background:#fff;border:1px solid #ddd;border-radius:999px;padding:6px 10px}
+  .hud{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .chip{background:#fff;border:1px solid #e6e6e6;border-radius:999px;padding:6px 10px}
   .layout{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:900px){.layout{grid-template-columns:minmax(380px,1fr) 360px}}
+  @media(min-width:980px){.layout{grid-template-columns:minmax(420px,1fr) 380px}}
   .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.05)}
   .card .body{padding:12px}
 
   /* Grid */
   .grid{
-    --n:11;
+    --n:13;
     display:grid;
     grid-template-columns:repeat(var(--n),minmax(0,1fr));
-    width:min(92vw,560px);
+    width:min(95vw,640px);
     aspect-ratio:1;
     border:3px solid var(--grid);
     margin:10px auto;
@@ -35,7 +35,7 @@
   }
   .cell{
     position:relative;display:flex;align-items:center;justify-content:center;
-    border:1px solid #999;background:var(--cell);font-weight:800;font-size:19px;cursor:pointer
+    border:1px solid #b8bfca;background:var(--cell);font-weight:800;font-size:20px;cursor:pointer
   }
   .cell.block{background:var(--block);cursor:default}
   .num{position:absolute;top:2px;left:4px;font-size:10px;color:#444;font-weight:600}
@@ -43,27 +43,29 @@
   .wordHL{box-shadow:inset 0 0 0 4px rgba(31,110,243,.18)}
   .correct{color:var(--good)} .wrong{color:var(--bad)}
 
+  /* Actions & side */
   .actions{text-align:center;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   button{padding:10px 12px;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
   button.primary{background:var(--accent);color:#fff;border:none}
-
   .clues{padding:8px 12px}
   .clues h3{margin:6px 0}
   .clue{padding:6px;border-radius:8px;margin:4px 0;cursor:pointer}
-  .clue:hover{background:#f1f4ff}
+  .clue:hover{background:#f0f4ff}
   .clue.active{background:#e6efff;border-left:3px solid var(--accent)}
   .clue small{color:var(--muted)}
-  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
-  th,td{padding:6px;border-bottom:1px solid #eee;text-align:left}
+  .levelBar{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{padding:6px 10px;border-radius:999px;border:1px solid #e6e6e6;background:#fff}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>🧠 Cyber Crossword</h1>
+    <h1>🧩 Cyber Crossword v2 (Offline)</h1>
     <div class="hud">
-      <div class="chip">⏱ <span id="timer">00:00</span></div>
       <div class="chip">⭐ Score: <span id="score">0</span></div>
+      <div class="chip">⏱ <span id="timer">00:00</span></div>
+      <div class="chip">🔓 Level: <span id="level">1</span>/3</div>
+      <div class="chip">🧩 Words: <span id="wordsCount">0</span></div>
     </div>
   </header>
 
@@ -71,169 +73,363 @@
     <!-- LEFT: GRID -->
     <div class="card">
       <div class="body">
+        <div class="levelBar">
+          <div class="pill">Level 1: 6 clues</div>
+          <div class="pill">Level 2: 7 clues</div>
+          <div class="pill">Level 3: 8 clues</div>
+        </div>
+
         <div id="grid" class="grid"></div>
         <input type="text" id="hiddenInput" maxlength="1" style="position:absolute;opacity:0;pointer-events:none;" />
+
         <div class="actions" style="margin-top:8px">
           <button id="check">Check answers</button>
           <button id="reveal">Reveal a letter</button>
           <button id="solve">Show solution</button>
-          <button id="restart">Restart</button>
-          <button id="submit" class="primary">Submit score</button>
+          <button id="restart">Restart level</button>
+          <button id="next" class="primary" disabled>Next level ▶</button>
+          <!-- Optional online submit (left disabled in offline mode)
+          <button id="submit" class="primary" style="display:none">Submit score</button> -->
         </div>
       </div>
     </div>
 
-    <!-- RIGHT: CLUES + LEADERBOARD -->
+    <!-- RIGHT: CLUES -->
     <aside class="card">
       <div class="body clues">
         <h3>Across</h3>
         <div id="cluesAcross"></div>
         <h3 style="margin-top:12px">Down</h3>
         <div id="cluesDown"></div>
-        <h3 style="margin-top:14px">🏆 Leaderboard (Top 10)</h3>
-        <table>
-          <thead><tr><th>Player</th><th>Score</th><th>Time(s)</th></tr></thead>
-          <tbody id="boardBody"><tr><td colspan="3">Loading…</td></tr></tbody>
-        </table>
       </div>
     </aside>
   </section>
 
   <footer style="text-align:center;margin-top:10px;color:#777;font-size:13px">
-    Click a clue or cell. Click the same cell again to toggle Across/Down.
+    Click a clue or cell to focus. Click the same cell again to toggle Across/Down. Light theme · Intersections · Numbering
   </footer>
 </div>
 
 <script>
-/* ========== CONFIG ========= */
-const ENDPOINT = "https://script.google.com/macros/s/AKfycbxbYSzhsxmadZwawvEDr8ea37Z0n1VLD6SbTYV7QhAp4bVQojhoQe_ZIoHYbL4yZEZ57g/exec";
-
-/* Fixed 11×11 matrix with letters for the solution and # for blocks.
-   This guarantees rendering and interlocking words. */
-const SIZE = 11;
-const BLOCK = "#";
-
-/* Interlocking layout:
-   - FIREWALL across (row1 col1..8)
-   - ENCRYPT down  (starts row1 col4)
-   - ROUTER  down  (starts row1 col3)
-   - MALWARE down  (starts row0 col6)
-   You can add more letters later; just place them in the MATRIX. */
-const MATRIX = [
-  "######M####",  // r0: MALWARE starts here (M)
-  "#FIREWALL##", // r1
-  "###ON#L####", // r2: O,N from ROUTER/ENCRYPT; L from MALWARE
-  "###UC#W####", // r3
-  "###TR#A####", // r4
-  "###EY#R####", // r5
-  "###RP#E####", // r6
-  "####T######", // r7
-  "###########", // r8
-  "###########", // r9
-  "###########"  // r10
+/* -------------------------------------------------------
+   1) DATA: 60 embedded clues (Sets A–C) for offline play
+   Keep ANSWERS in uppercase; spaces will be auto-removed.
+------------------------------------------------------- */
+const SET_A = [
+  {clue:"The property that ensures information is not disclosed to unauthorized users", answer:"CONFIDENTIALITY", hint:"CIA triad"},
+  {clue:"The ability to access information when needed", answer:"AVAILABILITY", hint:"CIA triad"},
+  {clue:"The act of protecting information from unauthorized access or modification", answer:"INFORMATION SECURITY", hint:"InfoSec"},
+  {clue:"A model that includes Confidentiality, Integrity, and Availability", answer:"CIA TRIAD", hint:"Model"},
+  {clue:"Expanded model including six principles instead of three", answer:"PARKERIAN HEXAD", hint:"6 principles"},
+  {clue:"Attack that allows unauthorized users to access data", answer:"INTERCEPTION", hint:"Confidentiality"},
+  {clue:"Attack that makes data or system unavailable", answer:"INTERRUPTION", hint:"Availability"},
+  {clue:"Attack involving tampering with data", answer:"MODIFICATION", hint:"Integrity"},
+  {clue:"Attack that generates false data or processes", answer:"FABRICATION", hint:"Fake entries"},
+  {clue:"Weakness that can be exploited by a threat", answer:"VULNERABILITY", hint:"Weak point"},
+  {clue:"Likelihood of a threat exploiting a vulnerability", answer:"RISK", hint:"Probability"},
+  {clue:"Measure that reduces or prevents risk", answer:"CONTROL", hint:"Safeguard"},
+  {clue:"Control involving fences, locks, or CCTV", answer:"PHYSICAL", hint:"Type"},
+  {clue:"Control involving passwords and firewalls", answer:"LOGICAL", hint:"Technical"},
+  {clue:"Control involving policies and procedures", answer:"ADMINISTRATIVE", hint:"Paper rules"},
+  {clue:"Strategy that uses multiple defensive layers", answer:"DEFENSE IN DEPTH", hint:"Layered"},
+  {clue:"Ensuring data is not lost due to disaster or theft", answer:"INFORMATION ASSURANCE", hint:"Backups"},
+  {clue:"An attack that floods a system with useless traffic", answer:"DENIAL OF SERVICE", hint:"DoS"},
+  {clue:"Software that installs itself without user consent", answer:"MALWARE", hint:"Malicious"},
+  {clue:"A malicious program that pretends to be useful", answer:"TROJAN HORSE", hint:"Backdoor"}
+];
+const SET_B = [
+  {clue:"Unauthorized access to computer systems", answer:"HACKING", hint:"Illegal intrusion"},
+  {clue:"An email attack tricking users to reveal information", answer:"PHISHING", hint:"Fake emails"},
+  {clue:"Cyber crime that spreads rumors or offensive messages online", answer:"CYBER DEFAMATION", hint:"Reputation"},
+  {clue:"Type of software that monitors user activity secretly", answer:"SPYWARE", hint:"Monitors"},
+  {clue:"Malware that encrypts data and demands payment", answer:"RANSOMWARE", hint:"Locks files"},
+  {clue:"Malware that copies itself to other computers", answer:"WORM", hint:"Self-replicate"},
+  {clue:"Program that pretends to be useful but is harmful", answer:"TROJAN", hint:"Backdoor"},
+  {clue:"Altering data before input or during processing", answer:"DATA DIDDLING", hint:"Manipulation"},
+  {clue:"Logic inserted to trigger a malicious action later", answer:"LOGIC BOMB", hint:"Delayed"},
+  {clue:"Using computer resources without permission", answer:"UNAUTHORIZED ACCESS", hint:"Illicit"},
+  {clue:"Copying of software without license", answer:"SOFTWARE PIRACY", hint:"Copyright"},
+  {clue:"Unauthorized transfer of funds via internet", answer:"CYBER FRAUD", hint:"Finance"},
+  {clue:"Online harassment through repeated messages", answer:"CYBER STALKING", hint:"Pursuit"},
+  {clue:"Sending bulk unsolicited emails", answer:"SPAMMING", hint:"Junk"},
+  {clue:"Unauthorized change to website content", answer:"WEBSITE DEFACEMENT", hint:"Graffiti"},
+  {clue:"Stealing confidential business information", answer:"CYBER ESPIONAGE", hint:"Spying"},
+  {clue:"Attacks motivated by politics or terrorism", answer:"CYBER TERRORISM", hint:"Motivated"},
+  {clue:"Program that records keystrokes", answer:"KEYLOGGER", hint:"Captures keys"},
+  {clue:"Group of infected computers controlled remotely", answer:"BOTNET", hint:"Zombie net"},
+  {clue:"The law that deals with cyber offenses in India", answer:"IT ACT 2000", hint:"Legal"}
+];
+const SET_C = [
+  {clue:"Device that filters incoming and outgoing network traffic", answer:"FIREWALL", hint:"Network defense"},
+  {clue:"System that detects and alerts suspicious activity", answer:"INTRUSION DETECTION SYSTEM", hint:"IDS"},
+  {clue:"Enhanced system that also blocks malicious traffic", answer:"INTRUSION PREVENTION SYSTEM", hint:"IPS"},
+  {clue:"Private, encrypted connection over the Internet", answer:"VPN", hint:"Secure tunnel"},
+  {clue:"Process of converting plaintext to unreadable form", answer:"ENCRYPTION", hint:"Uses keys"},
+  {clue:"Opposite of encryption", answer:"DECRYPTION", hint:"Readable"},
+  {clue:"Algorithm that turns data into a fixed-length value", answer:"HASHING", hint:"Integrity"},
+  {clue:"Unique string verifying message integrity", answer:"HASH VALUE", hint:"Digest"},
+  {clue:"Ensures authenticity and integrity of a message", answer:"DIGITAL SIGNATURE", hint:"Asymmetric"},
+  {clue:"Pair of related cryptographic keys", answer:"PUBLIC AND PRIVATE KEYS", hint:"Asymmetric"},
+  {clue:"Cryptographic standard that replaced DES", answer:"AES", hint:"Standard"},
+  {clue:"Security protocol securing web traffic", answer:"TLS", hint:"Successor to SSL"},
+  {clue:"Technology isolating a network from external access", answer:"DMZ", hint:"Perimeter"},
+  {clue:"Software that detects and removes viruses", answer:"ANTIVIRUS", hint:"Scanner"},
+  {clue:"Policy defining who can access information", answer:"ACCESS CONTROL", hint:"Authorization"},
+  {clue:"System that verifies user identity", answer:"AUTHENTICATION", hint:"Login"},
+  {clue:"Additional security factor beyond password", answer:"MULTI FACTOR AUTHENTICATION", hint:"MFA"},
+  {clue:"Backups stored to restore data after loss", answer:"DATA BACKUP", hint:"Recovery"},
+  {clue:"Testing security before hackers do", answer:"PENETRATION TESTING", hint:"Ethical hacking"},
+  {clue:"Combination of tools and policies to ensure safety", answer:"SECURITY ARCHITECTURE", hint:"Design"}
 ];
 
-/* Friendly clue texts for known answers */
-const CLUES_BY_WORD = {
-  FIREWALL: "Device that filters network traffic.",
-  ENCRYPT:  "Convert plaintext into ciphertext.",
-  ROUTER:   "Forwards packets between networks.",
-  MALWARE:  "Malicious software or code."
-};
+function normalizeAnswer(s){ return String(s).toUpperCase().replace(/[^A-Z0-9]/g,''); }
 
-/* ========= BUILD SOLUTION ARRAYS ========= */
-const solution = MATRIX.map(row => row.split(""));
+/* -------------------------------------------------------
+   2) LEVEL CONFIG
+------------------------------------------------------- */
+const LEVELS = [
+  {label:'Level 1', count:6, pool:SET_A},
+  {label:'Level 2', count:7, pool:SET_B},
+  {label:'Level 3', count:8, pool:SET_C},
+];
 
-/* ========= Derive Across + Down + Numbers ========= */
-function deriveEntries(){
-  const numbers = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
-  const across=[], down=[];
-  let next = 1;
-
-  // helper to assign a number if none
-  const ensureNum = (r,c) => {
-    if(numbers[r][c]==null) numbers[r][c] = next++;
-    return numbers[r][c];
-  };
-
-  // Across starts
-  for(let r=0;r<SIZE;r++){
-    for(let c=0;c<SIZE;c++){
-      if(solution[r][c]===BLOCK) continue;
-      const leftBlocked = (c===0 || solution[r][c-1]===BLOCK);
-      const rightContinues = (c+1<SIZE && solution[r][c+1]!==BLOCK);
-      if(leftBlocked && rightContinues){
-        let word="", cc=c;
-        while(cc<SIZE && solution[r][cc]!==BLOCK){ word += solution[r][cc]; cc++; }
-        if(word.length>=3){ // ignore 1–2 letter fillers
-          const n = ensureNum(r,c);
-          across.push({ n, row:r, col:c, answer:word,
-                        clue: CLUES_BY_WORD[word] || `Cyber term (${word.length} letters)` });
-        }
-      }
-    }
-  }
-  // Down starts
-  for(let r=0;r<SIZE;r++){
-    for(let c=0;c<SIZE;c++){
-      if(solution[r][c]===BLOCK) continue;
-      const upBlocked   = (r===0 || solution[r-1][c]===BLOCK);
-      const downCont    = (r+1<SIZE && solution[r+1][c]!==BLOCK);
-      if(upBlocked && downCont){
-        let word="", rr=r;
-        while(rr<SIZE && solution[rr][c]!==BLOCK){ word += solution[rr][c]; rr++; }
-        if(word.length>=3){
-          const n = numbers[r][c]!=null ? numbers[r][c] : (numbers[r][c]=next++);
-          down.push({ n, row:r, col:c, answer:word,
-                      clue: CLUES_BY_WORD[word] || `Intersects (${word.length} letters)` });
-        }
-      }
-    }
-  }
-  return {across, down, numbers};
-}
-const {across, down, numbers} = deriveEntries();
-
-/* ========= State ========= */
+/* -------------------------------------------------------
+   3) STATE & ELEMENTS
+------------------------------------------------------- */
 const $ = s => document.querySelector(s);
 const gridEl = $('#grid');
 const hiddenInput = $('#hiddenInput');
-const state = {
-  cells: Array.from({length:SIZE},()=>Array(SIZE).fill("")),
-  fixed: Array.from({length:SIZE},()=>Array(SIZE).fill(false)),
-  active: null,  // {r,c}
-  dir: "across",
-  score: 0,
-  start: Date.now()
-};
-// Optional: prefill first letter of FIREWALL, ENCRYPT, ROUTER, MALWARE
-[{r:1,c:1},{r:1,c:4},{r:1,c:3},{r:0,c:6}].forEach(p=>{
-  state.cells[p.r][p.c]=solution[p.r][p.c]; state.fixed[p.r][p.c]=true;
-});
+const scoreEl = $('#score');
+const timerEl = $('#timer');
+const levelEl = $('#level');
+const wordsCountEl = $('#wordsCount');
+const cluesAEl = $('#cluesAcross');
+const cluesDEl = $('#cluesDown');
 
-/* ========= Render Grid ========= */
+const BLOCK = '#';
+let SIZE = 13; // will expand if needed
+let solution, cells, fixed, numMap, entriesAcross, entriesDown;
+let active = null; // {r,c}
+let dir = 'across'; // 'across' | 'down'
+let score = 0;
+let startTs = 0;
+let timerId = null;
+let currentLevel = 0;
+let currentSet = [];
+
+/* -------------------------------------------------------
+   4) UTILS
+------------------------------------------------------- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]} return a; }
+function timeFmt(secs){const m=Math.floor(secs/60), s=secs%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+
+/* -------------------------------------------------------
+   5) CROSSWORD GENERATION (intersections)
+   Simple heuristic placer: tries to overlap letters with
+   existing words; alternates directions; expands grid if needed.
+------------------------------------------------------- */
+function blankGrid(n){ return Array.from({length:n},()=>Array(n).fill(BLOCK)); }
+function inside(n,r,c){ return r>=0 && r<n && c>=0 && c<n; }
+
+function canPlaceWord(grid, word, r, c, horizontal){
+  const n = grid.length;
+  if(horizontal){
+    if(c+word.length>n) return false;
+    for(let i=0;i<word.length;i++){
+      const ch = grid[r][c+i];
+      if(ch!==BLOCK && ch!==word[i]) return false;
+      // adjacency check: avoid side-touching letters (optional mild)
+      if(ch===BLOCK){
+        if(inside(n,r-1,c+i) && grid[r-1][c+i]!==BLOCK) return false;
+        if(inside(n,r+1,c+i) && grid[r+1][c+i]!==BLOCK) return false;
+      }
+    }
+    // endpoints check
+    if(inside(n,r,c-1) && grid[r][c-1]!==BLOCK) return false;
+    if(inside(n,r,c+word.length) && grid[r][c+word.length]!==BLOCK) return false;
+    return true;
+  }else{
+    if(r+word.length>n) return false;
+    for(let i=0;i<word.length;i++){
+      const ch = grid[r+i][c];
+      if(ch!==BLOCK && ch!==word[i]) return false;
+      if(ch===BLOCK){
+        if(inside(n,r+i,c-1) && grid[r+i][c-1]!==BLOCK) return false;
+        if(inside(n,r+i,c+1) && grid[r+i][c+1]!==BLOCK) return false;
+      }
+    }
+    if(inside(n,r-1,c) && grid[r-1][c]!==BLOCK) return false;
+    if(inside(n,r+word.length,c) && grid[r+word.length][c]!==BLOCK) return false;
+    return true;
+  }
+}
+function placeWord(grid, word, r, c, horizontal){
+  if(horizontal){ for(let i=0;i<word.length;i++) grid[r][c+i]=word[i]; }
+  else { for(let i=0;i<word.length;i++) grid[r+i][c]=word[i]; }
+}
+
+function generateGridFromWords(words){
+  // words: [{answer, clue, hint}]
+  let n = Math.max(13, Math.min(19, Math.max(...words.map(w=>normalizeAnswer(w.answer).length))+5));
+  let grid = blankGrid(n);
+  const placed = []; // {word, clue, hint, row, col, horizontal}
+
+  // Place first word across near center
+  const first = normalizeAnswer(words[0].answer);
+  let startCol = Math.floor((n-first.length)/2);
+  placeWord(grid, first, Math.floor(n/2), startCol, true);
+  placed.push({ word:first, clue:words[0].clue, hint:words[0].hint, row:Math.floor(n/2), col:startCol, horizontal:true });
+
+  // Place the rest
+  for(let wi=1; wi<words.length; wi++){
+    const raw = words[wi];
+    const word = normalizeAnswer(raw.answer);
+    let placedOk = false;
+
+    // Try to intersect with existing
+    const letters = word.split('');
+    // Shuffle for variety
+    const order = shuffle([...Array(letters.length).keys()]);
+    for(const li of order){
+      const ch = letters[li];
+      // scan grid for same letter
+      for(let r=0;r<n && !placedOk;r++){
+        for(let c=0;c<n && !placedOk;c++){
+          if(grid[r][c]===ch){
+            // try cross placement: if crossing a horizontal letter, place vertical; else horizontal
+            const tryVerticalFirst = true;
+            const options = tryVerticalFirst ? ['v','h'] : ['h','v'];
+            for(const mode of options){
+              if(mode==='h'){
+                const cc = c-li; const rr = r;
+                if(canPlaceWord(grid, word, rr, cc, true)){ placeWord(grid, word, rr, cc, true);
+                  placed.push({word, clue:raw.clue, hint:raw.hint, row:rr, col:cc, horizontal:true});
+                  placedOk = true; break;
+                }
+              }else{ // vertical
+                const rr = r-li; const cc = c;
+                if(canPlaceWord(grid, word, rr, cc, false)){ placeWord(grid, word, rr, cc, false);
+                  placed.push({word, clue:raw.clue, hint:raw.hint, row:rr, col:cc, horizontal:false});
+                  placedOk = true; break;
+                }
+              }
+            }
+          }
+        }
+      }
+      if(placedOk) break;
+    }
+
+    // If still not placed, try a few random positions
+    if(!placedOk){
+      for(let tries=0; tries<200 && !placedOk; tries++){
+        const horiz = Math.random()<0.5;
+        const rr = Math.floor(Math.random()*n);
+        const cc = Math.floor(Math.random()*n);
+        if(canPlaceWord(grid, word, rr, cc, horiz)){
+          placeWord(grid, word, rr, cc, horiz);
+          placed.push({word, clue:raw.clue, hint:raw.hint, row:rr, col:cc, horizontal:horiz});
+          placedOk = true;
+        }
+      }
+    }
+
+    // If still not placed, expand grid a bit and retry once
+    if(!placedOk){
+      n = Math.min(21, n+2);
+      // rebuild by recursion with larger grid
+      return generateGridFromWords(words);
+    }
+  }
+  return {grid, placed};
+}
+
+/* Build entries and numbering from final grid */
+function deriveEntries(grid){
+  const n = grid.length;
+  const numbers = Array.from({length:n},()=>Array(n).fill(null));
+  const across=[], down=[];
+  let next=1;
+
+  // Across
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      if(grid[r][c]===BLOCK) continue;
+      const leftBlocked = (c===0 || grid[r][c-1]===BLOCK);
+      const rightCont   = (c+1<n && grid[r][c+1]!==BLOCK);
+      if(leftBlocked && rightCont){
+        let word='', cc=c;
+        while(cc<n && grid[r][cc]!==BLOCK){ word+=grid[r][cc]; cc++; }
+        if(word.length>=2){
+          numbers[r][c]= next++;
+          across.push({n:numbers[r][c], row:r, col:c, answer:word});
+        }
+      }
+    }
+  }
+  // Down
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      if(grid[r][c]===BLOCK) continue;
+      const upBlocked = (r===0 || grid[r-1][c]===BLOCK);
+      const downCont  = (r+1<n && grid[r+1][c]!==BLOCK);
+      if(upBlocked && downCont){
+        let word='', rr=r;
+        while(rr<n && grid[rr][c]!==BLOCK){ word+=grid[rr][c]; rr++; }
+        if(word.length>=2){
+          if(numbers[r][c]==null) numbers[r][c]=next++;
+          down.push({n:numbers[r][c], row:r, col:c, answer:word});
+        }
+      }
+    }
+  }
+  return {numbers, across, down};
+}
+
+/* Map clues to entries by start cell + length */
+function attachClues(placed, entries){
+  // placed: {word,clue,hint,row,col,horizontal}
+  // Build a quick index by (row,col,h/v,length)
+  const idxAcross = {};
+  const idxDown   = {};
+  placed.forEach(p=>{
+    const key = `${p.row},${p.col},${p.horizontal?'A':'D'}`;
+    if(p.horizontal) idxAcross[key] = p;
+    else idxDown[key] = p;
+  });
+  const acrossWithClues = entries.across.map(a=>{
+    const key = `${a.row},${a.col},A`;
+    const src = idxAcross[key];
+    return {...a, clue: src?.clue || `Across (${a.answer.length})`, hint: src?.hint || ''};
+  });
+  const downWithClues = entries.down.map(d=>{
+    const key = `${d.row},${d.col},D`;
+    const src = idxDown[key];
+    return {...d, clue: src?.clue || `Down (${d.answer.length})`, hint: src?.hint || ''};
+  });
+  return {acrossWithClues, downWithClues};
+}
+
+/* -------------------------------------------------------
+   6) RENDERING & INPUT
+------------------------------------------------------- */
 function renderGrid(){
   gridEl.style.setProperty('--n', SIZE);
   gridEl.innerHTML='';
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       const cell=document.createElement('div');
-      const isBlock = solution[r][c]===BLOCK && !state.fixed[r][c];
+      const isBlock = solution[r][c]===BLOCK;
       cell.className='cell'+(isBlock?' block':'');
       if(!isBlock){
-        const n = numbers[r][c];
-        if(n!=null){ const num=document.createElement('div'); num.className='num'; num.textContent=n; cell.appendChild(num); }
-        const val = state.cells[r][c] || '';
+        const n = numMap[r][c];
+        if(n!=null){ const d=document.createElement('div'); d.className='num'; d.textContent=n; cell.appendChild(d); }
+        const val = cells[r][c] || '';
         cell.appendChild(document.createTextNode(val));
         cell.onclick = (e)=>{
-          if(state.active && state.active.r===r && state.active.c===c){
-            state.dir = state.dir==='across' ? 'down' : 'across';
-          }else{
-            state.active={r,c};
-            state.dir = guessDir(r,c);
-          }
-          focusHidden(e.target);
-          highlightWord();
+          if(active && active.r===r && active.c===c){ dir = (dir==='across'?'down':'across'); }
+          else { active = {r,c}; dir = guessDir(r,c); }
+          focusHidden(e.target); highlightWord();
         };
       }
       gridEl.appendChild(cell);
@@ -257,38 +453,34 @@ function focusHidden(target){
   hiddenInput.focus();
 }
 
+function idx(r,c){ return r*SIZE+c; }
 function highlightWord(){
   [...gridEl.children].forEach(el=>el.classList.remove('active','wordHL'));
-  if(!state.active) return;
-  const idx=(r,c)=>r*SIZE+c;
-  const {r,c}=state.active;
-  gridEl.children[idx(r,c)]?.classList.add('active');
-  if(state.dir==='across'){
-    let cc=c; while(cc>0 && solution[r][cc-1]!==BLOCK) cc--;
-    while(cc<SIZE && solution[r][cc]!==BLOCK){ gridEl.children[idx(r,cc)]?.classList.add('wordHL'); cc++; }
-  } else {
-    let rr=r; while(rr>0 && solution[rr-1][c]!==BLOCK) rr--;
-    while(rr<SIZE && solution[rr][c]!==BLOCK){ gridEl.children[idx(rr,c)]?.classList.add('wordHL'); rr++; }
+  if(!active) return;
+  const cellEl = gridEl.children[idx(active.r,active.c)];
+  cellEl?.classList.add('active');
+  if(dir==='across'){
+    let cc=active.c; while(cc>0 && solution[active.r][cc-1]!==BLOCK) cc--;
+    while(cc<SIZE && solution[active.r][cc]!==BLOCK){ gridEl.children[idx(active.r,cc)]?.classList.add('wordHL'); cc++; }
+  }else{
+    let rr=active.r; while(rr>0 && solution[rr-1][active.c]!==BLOCK) rr--;
+    while(rr<SIZE && solution[rr][active.c]!==BLOCK){ gridEl.children[idx(rr,active.c)]?.classList.add('wordHL'); rr++; }
   }
 }
 
-/* ========= Keyboard Input via hidden field ========= */
 hiddenInput.addEventListener('input', ()=>{
-  if(!state.active) return;
-  const {r,c}=state.active;
+  if(!active) return;
   const ch=(hiddenInput.value||'').toUpperCase();
   hiddenInput.value='';
-  if(/[A-Z]/.test(ch) && !state.fixed[r][c] && solution[r][c]!==BLOCK){
-    state.cells[r][c]=ch;
-    step(+1);
-    renderGrid();
+  if(/[A-Z0-9]/.test(ch) && solution[active.r][active.c]!==BLOCK){
+    cells[active.r][active.c]=ch;
+    step(+1); renderGrid(); maybeUnlockNext();
   }
 });
 document.addEventListener('keydown', (e)=>{
-  if(!state.active) return;
+  if(!active) return;
   if(e.key==='Backspace'){
-    const {r,c}=state.active;
-    if(!state.fixed[r][c]) state.cells[r][c]='';
+    if(solution[active.r][active.c]!==BLOCK) cells[active.r][active.c]='';
     step(-1); e.preventDefault(); renderGrid();
   }
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
@@ -296,127 +488,142 @@ document.addEventListener('keydown', (e)=>{
     moveBy(d[0],d[1]); e.preventDefault(); renderGrid();
   }
 });
-function step(dir){
-  const {r,c}=state.active;
-  if(state.dir==='across') moveTo(r,c+dir,0,dir);
-  else moveTo(r+dir,c,dir,0);
+function step(delta){
+  if(dir==='across') moveTo(active.r, active.c+delta, 0, delta);
+  else moveTo(active.r+delta, active.c, delta, 0);
 }
-function moveBy(dr,dc){
-  const {r,c}=state.active; moveTo(r+dr,c+dc,dr,dc);
-}
+function moveBy(dr,dc){ moveTo(active.r+dr, active.c+dc, dr, dc); }
 function moveTo(rr,cc,dr,dc){
   while(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE){
-    if(solution[rr][cc]!==BLOCK){ state.active={r:rr,c:cc}; return; }
+    if(solution[rr][cc]!==BLOCK){ active={r:rr,c:cc}; return; }
     rr+=dr; cc+=dc;
   }
 }
 
-/* ========= Clues ========= */
+/* Render clues */
 function renderClues(){
-  const A=$('#cluesAcross'), D=$('#cluesDown'); A.innerHTML=''; D.innerHTML='';
-  across.forEach(a=>{
+  cluesAEl.innerHTML=''; cluesDEl.innerHTML='';
+  entriesAcross.forEach(a=>{
     const el=document.createElement('div'); el.className='clue';
     el.innerHTML=`<strong>${a.n}.</strong> ${a.clue} <small>(${a.answer.length})</small>`;
-    el.onclick=()=>{ state.dir='across'; state.active={r:a.row,c:a.col}; renderGrid(); };
-    A.appendChild(el);
+    el.onclick=()=>{ dir='across'; active={r:a.row,c:a.col}; renderGrid(); };
+    cluesAEl.appendChild(el);
   });
-  down.forEach(d=>{
+  entriesDown.forEach(d=>{
     const el=document.createElement('div'); el.className='clue';
     el.innerHTML=`<strong>${d.n}.</strong> ${d.clue} <small>(${d.answer.length})</small>`;
-    el.onclick=()=>{ state.dir='down'; state.active={r:d.row,c:d.col}; renderGrid(); };
-    D.appendChild(el);
+    el.onclick=()=>{ dir='down'; active={r:d.row,c:d.col}; renderGrid(); };
+    cluesDEl.appendChild(el);
   });
 }
 
-/* ========= Check / Reveal / Solve / Restart / Submit ========= */
+/* -------------------------------------------------------
+   7) CHECK / REVEAL / SOLVE / RESTART / NEXT
+------------------------------------------------------- */
 function checkAnswers(){
   let correct=0,total=0;
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
       if(solution[r][c]===BLOCK) continue;
       total++;
-      const val=state.cells[r][c];
-      const cell=gridEl.children[r*SIZE+c];
+      const val=cells[r][c];
+      const cell=gridEl.children[idx(r,c)];
       if(val && val===solution[r][c]){ correct++; cell.classList.add('correct'); cell.classList.remove('wrong'); }
       else if(val){ cell.classList.add('wrong'); cell.classList.remove('correct'); }
       else cell.classList.remove('correct','wrong');
     }
   }
-  state.score = Math.round((correct/total)*100);
-  $('#score').textContent = state.score;
+  const pct = Math.round((correct/total)*100);
+  score = Math.max(score, pct); // keep best for level
+  scoreEl.textContent = score;
   if(correct===total){
-    const secs=Math.floor((Date.now()-state.start)/1000);
-    setTimeout(()=>alert(`Completed! Score ${state.score}% · Time ${secs}s`), 30);
+    document.getElementById('next').disabled=false;
+    const secs = Math.floor((Date.now()-startTs)/1000);
+    setTimeout(()=>alert(`🎉 Level complete! Score ${pct}% · Time ${timeFmt(secs)}`), 40);
   }
 }
 function revealOne(){
   for(let r=0;r<SIZE;r++){
     for(let c=0;c<SIZE;c++){
-      if(solution[r][c]!==BLOCK && !state.fixed[r][c] && state.cells[r][c]!==solution[r][c]){
-        state.cells[r][c]=solution[r][c]; renderGrid(); return;
+      if(solution[r][c]!==BLOCK && !cells[r][c]){
+        cells[r][c]=solution[r][c]; renderGrid(); maybeUnlockNext(); return;
       }
     }
   }
 }
 function showSolution(){
   for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++)
-    if(solution[r][c]!==BLOCK) state.cells[r][c]=solution[r][c];
-  renderGrid(); alert('Solution shown.');
+    if(solution[r][c]!==BLOCK) cells[r][c]=solution[r][c];
+  renderGrid(); document.getElementById('next').disabled=false;
 }
-function restart(){
-  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++)
-    if(!state.fixed[r][c] && solution[r][c]!==BLOCK) state.cells[r][c]='';
-  state.score=0; $('#score').textContent='0'; state.start=Date.now();
-  renderGrid();
-}
-async function submitScore(){
-  const secs = Math.floor((Date.now()-state.start)/1000);
-  const name = prompt('Enter your name to record score:') || 'Anonymous';
-  try{
-    await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'add_score', player:name, theme:'crossword', score:state.score, seconds:secs})});
-    alert('Score submitted!');
-    fetchLeaderboard();
-  }catch(e){ alert('Could not submit score.'); }
-}
+function restartLevel(){ buildLevel(currentLevel); }
 
-/* ========= Leaderboard ========= */
-async function fetchLeaderboard(){
-  try{
-    const res = await fetch(ENDPOINT + '?action=get_leaderboard');
-    const json = await res.json();
-    const rows = (json.rows||[]).slice(0,10);
-    const tbody = $('#boardBody'); tbody.innerHTML='';
-    if(!rows.length){ tbody.innerHTML='<tr><td colspan="3">No scores yet.</td></tr>'; return; }
-    rows.forEach(r=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(r.player||'')}</td><td>${r.score??''}</td><td>${r.seconds??''}</td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){
-    $('#boardBody').innerHTML='<tr><td colspan="3">Could not load.</td></tr>';
+function maybeUnlockNext(){
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      if(solution[r][c]!==BLOCK && cells[r][c]!==solution[r][c]){ return; }
+    }
   }
+  document.getElementById('next').disabled=false;
 }
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
 
-/* ========= Timer ========= */
-setInterval(()=>{
-  const t=Math.floor((Date.now()-state.start)/1000);
-  const mm=String(Math.floor(t/60)).padStart(2,'0');
-  const ss=String(t%60).padStart(2,'0');
-  $('#timer').textContent = `${mm}:${ss}`;
-}, 1000);
+/* -------------------------------------------------------
+   8) LEVEL BUILD
+------------------------------------------------------- */
+function buildLevel(levelIndex){
+  currentLevel = levelIndex;
+  levelEl.textContent = (levelIndex+1);
+  document.getElementById('next').disabled=true;
+  score = 0; scoreEl.textContent = '0';
+  if(timerId) clearInterval(timerId);
+  startTs = Date.now();
+  timerId = setInterval(()=>{ const secs=Math.floor((Date.now()-startTs)/1000); timerEl.textContent=timeFmt(secs); }, 250);
 
-/* ========= Boot ========= */
-renderGrid();
-renderClues();
-fetchLeaderboard();
+  const cfg = LEVELS[levelIndex];
+  // pick random distinct words from pool
+  const picks = shuffle(cfg.pool.slice()).slice(0,cfg.count).map(x=>({
+    clue: x.clue, hint: x.hint||'', answer: normalizeAnswer(x.answer)
+  }));
+  currentSet = picks;
+  // generate
+  const {grid, placed} = generateGridFromWords(picks);
+  solution = grid;
+  SIZE = grid.length;
+  gridEl.style.setProperty('--n', SIZE);
+  cells = Array.from({length:SIZE},()=>Array(SIZE).fill(''));
+  fixed = Array.from({length:SIZE},()=>Array(SIZE).fill(false));
 
-$('#check').onclick = checkAnswers;
-$('#reveal').onclick = revealOne;
-$('#solve').onclick = showSolution;
-$('#restart').onclick = restart;
-$('#submit').onclick = submitScore;
+  // numbering & entries
+  const deriv = deriveEntries(solution);
+  numMap = deriv.numbers;
+  const withClues = attachClues(placed, deriv);
+  entriesAcross = withClues.acrossWithClues;
+  entriesDown   = withClues.downWithClues;
+
+  // render
+  renderGrid();
+  renderClues();
+  wordsCountEl.textContent = cfg.count;
+  active = null; dir='across';
+}
+
+/* -------------------------------------------------------
+   9) WIRING
+------------------------------------------------------- */
+document.getElementById('check').onclick = checkAnswers;
+document.getElementById('reveal').onclick = revealOne;
+document.getElementById('solve').onclick = showSolution;
+document.getElementById('restart').onclick = restartLevel;
+document.getElementById('next').onclick = ()=>{
+  if(currentLevel<LEVELS.length-1){ buildLevel(currentLevel+1); }
+  else{
+    const secs = Math.floor((Date.now()-startTs)/1000);
+    alert(`🏁 All levels complete!\nBest Level Score: ${score}%\nTime: ${timeFmt(secs)}\n\n(Offline mode – submit disabled)`);
+  }
+};
+
+/* Boot: start at Level 1 */
+buildLevel(0);
 </script>
 </body>
 </html>
