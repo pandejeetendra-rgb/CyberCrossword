@@ -48,7 +48,7 @@
   }
   @media (min-width: 960px) {
     .layout {
-      grid-template-columns: 1fr 350px;
+      grid-template-columns: 1fr 360px;
     }
   }
   .card {
@@ -107,12 +107,30 @@
     font-size: 10px;
     color: #333;
   }
+  .cell.active {
+    outline: 3px solid var(--accent);
+  }
   .clue {
     padding: 4px;
     cursor: pointer;
   }
   .clue:hover {
     background: #eef3ff;
+  }
+  footer {
+    text-align: center;
+    font-size: 13px;
+    color: #666;
+  }
+  table {
+    width: 100%;
+    font-size: 14px;
+    border-collapse: collapse;
+  }
+  th, td {
+    border-bottom: 1px solid #eee;
+    padding: 4px;
+    text-align: left;
   }
 </style>
 </head>
@@ -136,11 +154,14 @@
           <button id="level3">Level 3</button>
         </div>
         <div id="grid" class="grid"></div>
+        <input type="text" id="hiddenInput" maxlength="1"
+               style="position:absolute;opacity:0;pointer-events:none;">
         <div class="actions">
           <button id="check">Check</button>
           <button id="reveal">Reveal</button>
           <button id="solve">Solution</button>
           <button id="restart">Restart</button>
+          <button id="submit" class="primary">Submit Score</button>
         </div>
       </div>
     </div>
@@ -151,12 +172,22 @@
         <div id="cluesAcross"></div>
         <h3>Down</h3>
         <div id="cluesDown"></div>
+
+        <h3 style="margin-top:14px;">🏆 Leaderboard (Top 10)</h3>
+        <table>
+          <thead><tr><th>Name</th><th>Score</th><th>Time(s)</th></tr></thead>
+          <tbody id="leaderboard"><tr><td colspan="3">Loading...</td></tr></tbody>
+        </table>
       </div>
     </aside>
   </section>
+
+  <footer>Click a cell to type a letter. Check, reveal, or solve anytime.</footer>
 </div>
 
 <script>
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxbYSzhsxmadZwawvEDr8ea37Z0n1VLD6SbTYV7QhAp4bVQojhoQe_ZIoHYbL4yZEZ57g/exec";
+
 const LEVELS = [
   {
     words: [
@@ -205,59 +236,95 @@ const LEVELS = [
 const gridEl = document.getElementById("grid");
 const acrossEl = document.getElementById("cluesAcross");
 const downEl = document.getElementById("cluesDown");
+const inputEl = document.getElementById("hiddenInput");
+const leaderboardBody = document.getElementById("leaderboard");
+
+let grid = [], filled = [], active = null, startTime = null, score = 0, level = 0;
 
 function makeGrid(level) {
   const n = 15;
-  const g = Array.from({ length: n }, () => Array(n).fill("#"));
-  const words = LEVELS[level].words.slice(0, 10);
-  let r = 2;
+  grid = Array.from({ length: n }, () => Array(n).fill("#"));
+  filled = Array.from({ length: n }, () => Array(n).fill(""));
+
+  const words = LEVELS[level].words;
+  let r = 1;
   words.forEach((w, i) => {
     const word = w.ans.toUpperCase();
-    if (r + word.length >= n) r = 2;
-    for (let j = 0; j < word.length; j++) g[r + j][i + 2] = word[j];
+    const c = (i % 2 === 0) ? 2 : 8;
+    if (r + word.length >= n) r = 1;
+    for (let j = 0; j < word.length; j++) grid[r + j][c] = word[j];
     r += 2;
   });
-  renderGrid(g, words);
+
+  render(words);
 }
 
-function renderGrid(grid, words) {
+function render(words) {
   gridEl.innerHTML = "";
-  const n = grid.length;
-  let clueNum = 1;
   acrossEl.innerHTML = "";
   downEl.innerHTML = "";
-  for (let i = 0; i < words.length; i++) {
-    const d = document.createElement("div");
-    d.className = "clue";
-    d.textContent = clueNum + ". " + words[i].clue;
-    if (i % 2 === 0) acrossEl.appendChild(d);
-    else downEl.appendChild(d);
+  document.getElementById("level").textContent = level + 1;
+  document.getElementById("wordsCount").textContent = words.length;
+  let clueNum = 1;
+
+  words.forEach((w, i) => {
+    const div = document.createElement("div");
+    div.className = "clue";
+    div.textContent = `${clueNum}. ${w.clue}`;
+    (i % 2 === 0 ? acrossEl : downEl).appendChild(div);
     clueNum++;
-  }
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
+  });
+
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid.length; c++) {
       const val = grid[r][c];
       const div = document.createElement("div");
       div.className = "cell" + (val === "#" ? " block" : "");
       if (val !== "#") {
-        div.textContent = val;
-        if (r === 2 || c === 2) {
-          const ndiv = document.createElement("div");
-          ndiv.className = "num";
-          ndiv.textContent = (r + c) % 5 === 0 ? (r + c) / 2 : "";
-          div.appendChild(ndiv);
-        }
+        const num = document.createElement("div");
+        num.className = "num";
+        num.textContent = (r + c) % 3 === 0 ? (r + c) / 2 : "";
+        div.appendChild(num);
+        div.onclick = () => {
+          active = { r, c };
+          inputEl.focus();
+          updateActive();
+        };
       }
+      div.textContent = filled[r][c] || (val === "#" ? "" : "");
       gridEl.appendChild(div);
     }
   }
 }
 
-document.getElementById("level1").onclick = () => makeGrid(0);
-document.getElementById("level2").onclick = () => makeGrid(1);
-document.getElementById("level3").onclick = () => makeGrid(2);
+function updateActive() {
+  document.querySelectorAll(".cell").forEach(e => e.classList.remove("active"));
+  if (!active) return;
+  const index = active.r * 15 + active.c;
+  gridEl.children[index].classList.add("active");
+}
 
-makeGrid(0);
-</script>
-</body>
-</html>
+inputEl.addEventListener("input", () => {
+  if (!active) return;
+  const ch = inputEl.value.toUpperCase();
+  inputEl.value = "";
+  if (!/[A-Z]/.test(ch)) return;
+  filled[active.r][active.c] = ch;
+  render(LEVELS[level].words);
+  updateActive();
+});
+
+document.getElementById("check").onclick = () => {
+  let correct = 0, total = 0;
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      if (grid[r][c] !== "#") {
+        total++;
+        if (filled[r][c] === grid[r][c]) correct++;
+      }
+  score = Math.round((correct / total) * 100);
+  document.getElementById("score").textContent = score;
+  alert(`Your score: ${score}%`);
+};
+
+document.getElementById(
