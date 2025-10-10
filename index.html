@@ -3,63 +3,54 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cyber Crossword v2 (Offline)</title>
+<title>Cyber Crossword (Offline)</title>
 <style>
   :root{
-    --bg:#f8f9fa; --ink:#222; --muted:#666; --accent:#1f6ef3;
-    --grid:#000; --cell:#fff; --block:#e4e6ea;
-    --good:#0f9d58; --bad:#d93025;
+    --bg:#f8fafc; --ink:#222; --muted:#555; --accent:#2563eb;
+    --block:#e5e7eb; --cell:#ffffff; --good:#16a34a; --bad:#dc2626;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.55 "Segoe UI",Roboto,system-ui,Arial,sans-serif}
-  .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  h1{margin:0;font-size:20px}
-  .hud{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-  .chip{background:#fff;border:1px solid #e6e6e6;border-radius:999px;padding:6px 10px}
-  .layout{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:960px){.layout{grid-template-columns:minmax(420px,1fr) 380px}}
-  .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.05)}
-  .card .body{padding:12px}
-
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI",Roboto,system-ui,sans-serif;}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px;}
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+  h1{margin:0;font-size:22px;}
+  .hud{display:flex;gap:10px;flex-wrap:wrap;}
+  .chip{background:#fff;border:1px solid #ddd;border-radius:999px;padding:6px 10px;}
+  .layout{display:grid;gap:16px;}
+  @media(min-width:960px){.layout{grid-template-columns:1fr 350px;}}
+  .card{background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,.05);}
+  .card .body{padding:12px;}
   .grid{
-    --n:20;
+    --n:15;
     display:grid;
-    grid-template-columns:repeat(var(--n),minmax(0,1fr));
-    width:min(95vw,640px);
+    grid-template-columns:repeat(var(--n),1fr);
+    width:min(95vw,600px);
     aspect-ratio:1;
-    border:3px solid var(--grid);
+    border:3px solid #000;
     margin:10px auto;
     user-select:none;
-    background:#fff;
   }
-  .cell{
-    position:relative;display:flex;align-items:center;justify-content:center;
-    border:1px solid #b8bfca;background:var(--cell);font-weight:700;font-size:20px;cursor:pointer
-  }
-  .cell.block{background:var(--block);cursor:default}
-  .num{position:absolute;top:2px;left:4px;font-size:10px;color:#444;font-weight:600}
-  .active{outline:3px solid var(--accent);outline-offset:-3px}
-  .wordHL{box-shadow:inset 0 0 0 4px rgba(31,110,243,.18)}
-  .correct{color:var(--good)} .wrong{color:var(--bad)}
-
-  .actions{text-align:center;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  button{padding:10px 12px;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
-  button.primary{background:var(--accent);color:#fff;border:none}
-  .clues{padding:8px 12px}
-  .clues h3{margin:6px 0}
-  .clue{padding:6px;border-radius:8px;margin:4px 0;cursor:pointer}
-  .clue:hover{background:#f0f4ff}
-  .clue.active{background:#e6efff;border-left:3px solid var(--accent)}
-  .clue small{color:var(--muted)}
-  .levelBar{display:flex;gap:8px;flex-wrap:wrap}
-  .pill{padding:6px 10px;border-radius:999px;border:1px solid #e6e6e6;background:#fff}
+  .cell{border:1px solid #bbb;display:flex;align-items:center;justify-content:center;
+        font-weight:700;font-size:20px;background:var(--cell);position:relative;cursor:pointer;}
+  .cell.block{background:var(--block);cursor:default;}
+  .num{position:absolute;top:1px;left:3px;font-size:10px;color:#333;}
+  .active{outline:3px solid var(--accent);outline-offset:-3px;}
+  .wordHL{box-shadow:inset 0 0 0 4px rgba(37,99,235,.15);}
+  .actions{text-align:center;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+  button{padding:10px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;}
+  button.primary{background:var(--accent);color:#fff;border:none;}
+  .clues{padding:10px;}
+  .clues h3{margin:6px 0;}
+  .clue{padding:6px;border-radius:8px;margin:4px 0;cursor:pointer;}
+  .clue:hover{background:#f0f4ff;}
+  footer{text-align:center;color:#666;font-size:13px;margin-top:12px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>🧩 Cyber Crossword v2 (Offline)</h1>
+    <h1>🧩 Cyber Crossword (Offline)</h1>
     <div class="hud">
       <div class="chip">⭐ Score: <span id="score">0</span></div>
       <div class="chip">⏱ <span id="timer">00:00</span></div>
@@ -71,19 +62,19 @@
   <section class="layout">
     <div class="card">
       <div class="body">
-        <div class="levelBar">
-          <div class="pill">Level 1: 6 clues</div>
-          <div class="pill">Level 2: 7 clues</div>
-          <div class="pill">Level 3: 8 clues</div>
+        <div class="actions" style="justify-content:flex-start;margin-bottom:6px;">
+          <button class="primary" id="level1">Level 1</button>
+          <button id="level2">Level 2</button>
+          <button id="level3">Level 3</button>
         </div>
         <div id="grid" class="grid"></div>
-        <input type="text" id="hiddenInput" maxlength="1" style="position:absolute;opacity:0;pointer-events:none;" />
-        <div class="actions" style="margin-top:8px">
+        <input type="text" id="hiddenInput" maxlength="1"
+               style="position:absolute;opacity:0;pointer-events:none;">
+        <div class="actions">
           <button id="check">Check</button>
           <button id="reveal">Reveal</button>
           <button id="solve">Solution</button>
           <button id="restart">Restart</button>
-          <button id="next" class="primary" disabled>Next Level ▶</button>
         </div>
       </div>
     </div>
@@ -92,138 +83,30 @@
       <div class="body clues">
         <h3>Across</h3>
         <div id="cluesAcross"></div>
-        <h3 style="margin-top:12px">Down</h3>
+        <h3 style="margin-top:10px;">Down</h3>
         <div id="cluesDown"></div>
       </div>
     </aside>
   </section>
-  <footer style="text-align:center;margin-top:10px;color:#777;font-size:13px">
-    Click a clue or cell to focus. Tap again to toggle Across/Down.
-  </footer>
+
+  <footer>Click a cell or clue to focus. Tap same cell again to switch direction.</footer>
 </div>
 
 <script>
-/* ---------- 1. DATA (same Sets A–C embedded) ---------- */
-const normalize=s=>String(s).toUpperCase().replace(/[^A-Z0-9]/g,'');
-const SET_A=[{clue:"The property that ensures information is not disclosed to unauthorized users",answer:"CONFIDENTIALITY"},
-{clue:"The ability to access information when needed",answer:"AVAILABILITY"},
-{clue:"The act of protecting information from unauthorized access or modification",answer:"INFORMATION SECURITY"},
-{clue:"A model that includes Confidentiality, Integrity, and Availability",answer:"CIA TRIAD"},
-{clue:"Expanded model including six principles instead of three",answer:"PARKERIAN HEXAD"},
-{clue:"Attack that allows unauthorized users to access data",answer:"INTERCEPTION"},
-{clue:"Attack that makes data or system unavailable",answer:"INTERRUPTION"},
-{clue:"Attack involving tampering with data",answer:"MODIFICATION"},
-{clue:"Weakness that can be exploited by a threat",answer:"VULNERABILITY"},
-{clue:"Likelihood of a threat exploiting a vulnerability",answer:"RISK"},
-{clue:"Strategy that uses multiple defensive layers",answer:"DEFENSE IN DEPTH"}];
-
-const SET_B=[{clue:"Unauthorized access to computer systems",answer:"HACKING"},
-{clue:"An email attack tricking users to reveal information",answer:"PHISHING"},
-{clue:"Type of software that monitors user activity secretly",answer:"SPYWARE"},
-{clue:"Malware that encrypts data and demands payment",answer:"RANSOMWARE"},
-{clue:"Program that pretends to be useful but is harmful",answer:"TROJAN"},
-{clue:"Logic inserted to trigger a malicious action later",answer:"LOGIC BOMB"},
-{clue:"Unauthorized change to website content",answer:"WEBSITE DEFACEMENT"},
-{clue:"Copying of software without license",answer:"SOFTWARE PIRACY"},
-{clue:"Attacks motivated by politics or terrorism",answer:"CYBER TERRORISM"},
-{clue:"Program that records keystrokes",answer:"KEYLOGGER"},
-{clue:"Group of infected computers controlled remotely",answer:"BOTNET"}];
-
-const SET_C=[{clue:"Device that filters incoming and outgoing network traffic",answer:"FIREWALL"},
-{clue:"System that detects and alerts suspicious activity",answer:"INTRUSION DETECTION SYSTEM"},
-{clue:"Private, encrypted connection over the Internet",answer:"VPN"},
-{clue:"Process of converting plaintext to unreadable form",answer:"ENCRYPTION"},
-{clue:"Opposite of encryption",answer:"DECRYPTION"},
-{clue:"Algorithm that turns data into a fixed-length value",answer:"HASHING"},
-{clue:"Ensures authenticity and integrity of a message",answer:"DIGITAL SIGNATURE"},
-{clue:"Pair of related cryptographic keys",answer:"PUBLIC AND PRIVATE KEYS"},
-{clue:"Software that detects and removes viruses",answer:"ANTIVIRUS"},
-{clue:"System that verifies user identity",answer:"AUTHENTICATION"},
-{clue:"Testing security before hackers do",answer:"PENETRATION TESTING"}];
-
-const LEVELS=[{label:"Level 1",count:6,pool:SET_A},
-              {label:"Level 2",count:7,pool:SET_B},
-              {label:"Level 3",count:8,pool:SET_C}];
-/* ---------- 2. HELPERS ---------- */
-const $=q=>document.querySelector(q);
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
-function timeFmt(s){const m=Math.floor(s/60),ss=s%60;return`${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;}
-/* ---------- 3. SIMPLE GRID BUILDER ---------- */
-function blank(n){return Array.from({length:n},()=>Array(n).fill('#'));}
-function inside(n,r,c){return r>=0&&c>=0&&r<n&&c<n;}
-function canPlace(g,w,r,c,h){
-  const n=g.length;
-  if(h){if(c+w.length>n)return!1;for(let i=0;i<w.length;i++){if(g[r][c+i]!=='#'&&g[r][c+i]!==w[i])return!1;}return!0;}
-  else{if(r+w.length>n)return!1;for(let i=0;i<w.length;i++){if(g[r+i][c]!=='#'&&g[r+i][c]!==w[i])return!1;}return!0;}
-}
-function place(g,w,r,c,h){if(h)for(let i=0;i<w.length;i++)g[r][c+i]=w[i];else for(let i=0;i<w.length;i++)g[r+i][c]=w[i];}
-
-function generate(words){
-  for(let attempt=0;attempt<10;attempt++){
-    const n=20;const g=blank(n);const placed=[];
-    const first=normalize(words[0].answer);const sr=Math.floor(n/2);const sc=Math.floor((n-first.length)/2);
-    place(g,first,sr,sc,true);placed.push({w:first,r:sr,c:sc,h:true,clue:words[0].clue});
-    for(let i=1;i<words.length;i++){
-      const w=normalize(words[i].answer);let ok=false;
-      for(let tries=0;tries<200&&!ok;tries++){
-        const h=Math.random()<.5;const r=Math.floor(Math.random()*n);const c=Math.floor(Math.random()*n);
-        if(canPlace(g,w,r,c,h)){place(g,w,r,c,h);placed.push({w,r,c,h,clue:words[i].clue});ok=true;}
-      }
-      if(!ok&&i===1){place(g,w,Math.floor(Math.random()*n),2,true);placed.push({w,r:0,c:2,h:true,clue:words[i].clue});}
-    }
-    if(placed.length>=3)return{g,placed};
-  }
-  return{g:blank(20),placed:[]};
-}
-/* ---------- 4. GLOBAL STATE ---------- */
-let solution=[],cells=[],SIZE=20,active=null,dir='across',score=0,startTs,timerId,currentLevel=0;
-/* ---------- 5. BUILD LEVEL ---------- */
-function buildLevel(idx){
-  currentLevel=idx;$('#level').textContent=idx+1;$('#next').disabled=true;
-  const lv=LEVELS[idx];const picks=shuffle(lv.pool.slice()).slice(0,lv.count);
-  const {g,placed}=generate(picks);solution=g;SIZE=g.length;
-  cells=Array.from({length:SIZE},()=>Array(SIZE).fill(''));
-  renderGrid();renderClues(placed);$('#wordsCount').textContent=lv.count;
-  if(timerId)clearInterval(timerId);startTs=Date.now();
-  timerId=setInterval(()=>$('#timer').textContent=timeFmt(Math.floor((Date.now()-startTs)/1e3)),250);
-}
-/* ---------- 6. RENDER GRID ---------- */
-function renderGrid(){
-  const grid=$('#grid');grid.style.setProperty('--n',SIZE);grid.innerHTML='';
-  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
-    const v=solution[r][c];const div=document.createElement('div');
-    div.className='cell'+(v==='#'?' block':'');
-    if(v!=='#'){div.textContent=cells[r][c]||'';div.onclick=()=>{active={r,c};dir=dir==='across'?'down':'across';focus();};}
-    grid.appendChild(div);
-  }
-}
-function focus(){const hi=$('#hiddenInput');hi.focus();}
-/* ---------- 7. CLUES ---------- */
-function renderClues(p){
-  const A=$('#cluesAcross'),D=$('#cluesDown');A.innerHTML='';D.innerHTML='';
-  p.forEach((x,i)=>{const e=document.createElement('div');e.className='clue';
-    e.textContent=(i+1)+'. '+x.clue+' ('+x.w.length+')';A.appendChild(e);});
-}
-/* ---------- 8. INPUT ---------- */
-$('#hiddenInput').addEventListener('input',e=>{
-  if(!active)return;const ch=e.target.value.toUpperCase();e.target.value='';
-  if(/[A-Z0-9]/.test(ch)){cells[active.r][active.c]=ch;renderGrid();}
-});
-/* ---------- 9. CONTROLS ---------- */
-$('#check').onclick=()=>{
-  let correct=0,total=0;
-  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(solution[r][c]!=='#'){total++;if(cells[r][c]===solution[r][c])correct++;}
-  const pct=Math.round(correct/total*100);score=Math.max(score,pct);$('#score').textContent=score;
-  if(correct===total){$('#next').disabled=false;alert('✅ Level complete');}
-};
-$('#reveal').onclick=()=>{
-  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(solution[r][c]!=='#'&&!cells[r][c]){cells[r][c]=solution[r][c];renderGrid();return;}
-};
-$('#solve').onclick=()=>{for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(solution[r][c]!=='#')cells[r][c]=solution[r][c];renderGrid();$('#next').disabled=false;};
-$('#restart').onclick=()=>buildLevel(currentLevel);
-$('#next').onclick=()=>{if(currentLevel<2)buildLevel(currentLevel+1);else alert('🏁 All levels done!');};
-/* ---------- 10. INIT ---------- */
-buildLevel(0);
-</script>
-</body>
-</html>
+/* ========== Data: Cybersecurity clues ========== */
+const LEVELS = [
+  {
+    words:[
+      {clue:"Protects network by filtering traffic",ans:"FIREWALL"},
+      {clue:"Process of scrambling data",ans:"ENCRYPTION"},
+      {clue:"Opposite of encryption",ans:"DECRYPTION"},
+      {clue:"Malicious software",ans:"MALWARE"},
+      {clue:"Tricking users by fake emails",ans:"PHISHING"},
+      {clue:"Self-replicating malware",ans:"WORM"},
+      {clue:"Pretends to be useful software",ans:"TROJAN"},
+      {clue:"Program that records keystrokes",ans:"KEYLOGGER"},
+      {clue:"Attack that floods a system",ans:"DOS"},
+      {clue:"Ensures data is accessible",ans:"AVAILABILITY"},
+      {clue:"Ensures data remains accurate",ans:"INTEGRITY"},
+      {clue:"Prevents unauthorized disclosure",ans:"CONFIDENTIALITY"}
+    ]
