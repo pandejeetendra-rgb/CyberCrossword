@@ -239,7 +239,7 @@ const downEl = document.getElementById("cluesDown");
 const inputEl = document.getElementById("hiddenInput");
 const leaderboardBody = document.getElementById("leaderboard");
 
-let grid = [], filled = [], active = null, startTime = null, score = 0, level = 0;
+let grid = [], filled = [], active = null, score = 0, level = 0, startTime = null;
 
 function makeGrid(level) {
   const n = 15;
@@ -285,13 +285,13 @@ function render(words) {
         num.className = "num";
         num.textContent = (r + c) % 3 === 0 ? (r + c) / 2 : "";
         div.appendChild(num);
+        div.textContent = filled[r][c]; // << only show what user typed
         div.onclick = () => {
           active = { r, c };
           inputEl.focus();
           updateActive();
         };
       }
-      div.textContent = filled[r][c] || (val === "#" ? "" : "");
       gridEl.appendChild(div);
     }
   }
@@ -327,4 +327,69 @@ document.getElementById("check").onclick = () => {
   alert(`Your score: ${score}%`);
 };
 
-document.getElementById(
+document.getElementById("reveal").onclick = () => {
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      if (grid[r][c] !== "#" && !filled[r][c]) {
+        filled[r][c] = grid[r][c];
+        render(LEVELS[level].words);
+        return;
+      }
+};
+
+document.getElementById("solve").onclick = () => {
+  for (let r = 0; r < 15; r++)
+    for (let c = 0; c < 15; c++)
+      if (grid[r][c] !== "#") filled[r][c] = grid[r][c];
+  render(LEVELS[level].words);
+};
+
+document.getElementById("restart").onclick = () => makeGrid(level);
+
+document.getElementById("level1").onclick = () => { level = 0; makeGrid(level); };
+document.getElementById("level2").onclick = () => { level = 1; makeGrid(level); };
+document.getElementById("level3").onclick = () => { level = 2; makeGrid(level); };
+
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(ENDPOINT + "?action=get_leaderboard");
+    const data = await res.json();
+    leaderboardBody.innerHTML = "";
+    (data.rows || []).slice(0, 10).forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${r.player}</td><td>${r.score}</td><td>${r.seconds}</td>`;
+      leaderboardBody.appendChild(tr);
+    });
+  } catch {
+    leaderboardBody.innerHTML = "<tr><td colspan='3'>Unable to load</td></tr>";
+  }
+}
+
+document.getElementById("submit").onclick = async () => {
+  const name = prompt("Enter your name:") || "Anonymous";
+  const seconds = Math.floor((Date.now() - startTime) / 1000);
+  try {
+    await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_score",
+        player: name,
+        theme: "cyber-crossword",
+        score: score,
+        seconds: seconds
+      })
+    });
+    alert("✅ Score submitted!");
+    loadLeaderboard();
+  } catch {
+    alert("⚠️ Could not submit score.");
+  }
+};
+
+loadLeaderboard();
+makeGrid(0);
+startTime = Date.now();
+</script>
+</body>
+</html>
