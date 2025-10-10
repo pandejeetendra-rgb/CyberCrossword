@@ -17,121 +17,31 @@
     color: var(--ink);
     font-family: "Segoe UI", Roboto, sans-serif;
   }
-  .wrap {
-    max-width: 1200px;
-    margin: auto;
-    padding: 20px;
-  }
-  header {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  h1 {
-    margin: 0;
-    font-size: 22px;
-  }
-  .hud {
-    display: flex;
-    gap: 10px;
-  }
-  .chip {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 999px;
-    padding: 6px 10px;
-  }
-  .layout {
-    display: grid;
-    gap: 20px;
-  }
-  @media (min-width: 960px) {
-    .layout {
-      grid-template-columns: 1fr 360px;
-    }
-  }
-  .card {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-  .card .body {
-    padding: 10px;
-  }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    margin: 8px 0;
-  }
-  button {
-    border: 1px solid #ccc;
-    background: #fff;
-    padding: 8px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  button.primary {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(15, 1fr);
-    width: min(95vw, 600px);
-    aspect-ratio: 1;
-    margin: 10px auto;
-    border: 3px solid #000;
-  }
-  .cell {
-    border: 1px solid #aaa;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 20px;
-    position: relative;
-    background: white;
-  }
-  .cell.block {
-    background: var(--block);
-  }
-  .num {
-    position: absolute;
-    top: 1px;
-    left: 3px;
-    font-size: 10px;
-    color: #333;
-  }
-  .cell.active {
-    outline: 3px solid var(--accent);
-  }
-  .clue {
-    padding: 4px;
-    cursor: pointer;
-  }
-  .clue:hover {
-    background: #eef3ff;
-  }
-  footer {
-    text-align: center;
-    font-size: 13px;
-    color: #666;
-  }
-  table {
-    width: 100%;
-    font-size: 14px;
-    border-collapse: collapse;
-  }
-  th, td {
-    border-bottom: 1px solid #eee;
-    padding: 4px;
-    text-align: left;
-  }
+  .wrap { max-width: 1200px; margin: auto; padding: 20px; }
+  header { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+  h1 { margin: 0; font-size: 22px; }
+  .hud { display: flex; gap: 10px; }
+  .chip { background: #fff; border: 1px solid #ddd; border-radius: 999px; padding: 6px 10px; }
+  .layout { display: grid; gap: 20px; }
+  @media (min-width: 960px) { .layout { grid-template-columns: 1fr 360px; } }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+  .card .body { padding: 10px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
+  button { border: 1px solid #ccc; background: #fff; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border: none; }
+  .grid { display: grid; grid-template-columns: repeat(15, 1fr); width: min(95vw, 600px); aspect-ratio: 1; margin: 10px auto; border: 3px solid #000; }
+  .cell { border: 1px solid #aaa; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 20px; position: relative; background: white; }
+  .cell.block { background: var(--block); }
+  .num { position: absolute; top: 1px; left: 3px; font-size: 10px; color: #333; }
+  .cell.active { outline: 3px solid var(--accent); }
+  .clue { padding: 4px; cursor: pointer; }
+  .clue:hover { background: #eef3ff; }
+  footer { text-align: center; font-size: 13px; color: #666; margin-top: 10px; }
+  table { width: 100%; font-size: 14px; border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #eee; padding: 4px; text-align: left; }
+  .keyboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 10px; }
+  .key { width: 30px; height: 36px; text-align: center; line-height: 34px; border: 1px solid #aaa; border-radius: 5px; cursor: pointer; background: #fff; }
+  .key:hover { background: var(--accent); color: white; }
 </style>
 </head>
 <body>
@@ -163,6 +73,7 @@
           <button id="restart">Restart</button>
           <button id="submit" class="primary">Submit Score</button>
         </div>
+        <div class="keyboard" id="keyboard"></div>
       </div>
     </div>
 
@@ -172,7 +83,6 @@
         <div id="cluesAcross"></div>
         <h3>Down</h3>
         <div id="cluesDown"></div>
-
         <h3 style="margin-top:14px;">🏆 Leaderboard (Top 10)</h3>
         <table>
           <thead><tr><th>Name</th><th>Score</th><th>Time(s)</th></tr></thead>
@@ -181,215 +91,124 @@
       </div>
     </aside>
   </section>
-
-  <footer>Click a cell to type a letter. Check, reveal, or solve anytime.</footer>
+  <footer>Tap letters or use keyboard to fill. Click a cell to begin.</footer>
 </div>
 
 <script>
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbxbYSzhsxmadZwawvEDr8ea37Z0n1VLD6SbTYV7QhAp4bVQojhoQe_ZIoHYbL4yZEZ57g/exec";
 
 const LEVELS = [
-  {
-    words: [
-      { clue: "Protects network traffic", ans: "FIREWALL" },
-      { clue: "Converts data into unreadable form", ans: "ENCRYPTION" },
-      { clue: "Opposite of encryption", ans: "DECRYPTION" },
-      { clue: "Malicious software", ans: "MALWARE" },
-      { clue: "Deceptive email attack", ans: "PHISHING" },
-      { clue: "Self-replicating program", ans: "WORM" },
-      { clue: "Fake useful program", ans: "TROJAN" },
-      { clue: "Records keystrokes", ans: "KEYLOGGER" },
-      { clue: "Ensures accuracy of data", ans: "INTEGRITY" },
-      { clue: "Ensures data accessibility", ans: "AVAILABILITY" }
-    ]
-  },
-  {
-    words: [
-      { clue: "Encrypts Internet connection", ans: "VPN" },
-      { clue: "Pair of keys for encryption", ans: "KEYPAIR" },
-      { clue: "Security test simulating attacks", ans: "PENTEST" },
-      { clue: "Software removing viruses", ans: "ANTIVIRUS" },
-      { clue: "Layers of protection", ans: "DEFENSE" },
-      { clue: "Verifies user identity", ans: "AUTHENTICATION" },
-      { clue: "Ensures authorized use", ans: "ACCESSCONTROL" },
-      { clue: "Saves data copies", ans: "BACKUP" },
-      { clue: "Detects suspicious activity", ans: "IDS" },
-      { clue: "Prevents intrusion", ans: "IPS" }
-    ]
-  },
-  {
-    words: [
-      { clue: "Demands payment after infection", ans: "RANSOMWARE" },
-      { clue: "Illegal copying of software", ans: "PIRACY" },
-      { clue: "Fake online identity", ans: "IMPERSONATION" },
-      { clue: "Alters data before entry", ans: "DATADIDDLING" },
-      { clue: "Online harassment", ans: "CYBERSTALKING" },
-      { clue: "Unauthorized site change", ans: "DEFACEMENT" },
-      { clue: "Network spying", ans: "ESPIONAGE" },
-      { clue: "Floods network traffic", ans: "DDOS" },
-      { clue: "Ensures message authenticity", ans: "SIGNATURE" },
-      { clue: "Cyber law in India", ans: "ITACT2000" }
+  { // simplified crossword layout with intersections
+    layout: [
+      "FIREWALL.....",
+      "..I...........",
+      "ENCRYPTION....",
+      "....D.........",
+      "DECRYPTION....",
+      "...MALWARE....",
+      "....P.........",
+      "..PHISHING....",
+      "....W.........",
+      "....TROJAN....",
+      "....K.........",
+      "..KEYLOGGER...",
+      "....I.........",
+      "INTEGRITY.....",
+      "AVAILABILITY.."
+    ],
+    across: [
+      "1. Protects network traffic",
+      "3. Converts data into unreadable form",
+      "5. Opposite of encryption",
+      "7. Malicious software",
+      "9. Deceptive email attack",
+      "11. Fake useful program",
+      "13. Records keystrokes",
+      "15. Ensures accuracy of data",
+      "17. Ensures data accessibility"
+    ],
+    down: [
+      "2. Converts plaintext into ciphertext",
+      "4. Malicious code category",
+      "6. Self-replicating program",
+      "8. Deceptive message to steal data",
+      "10. Ensures information can be used",
     ]
   }
 ];
 
-const gridEl = document.getElementById("grid");
-const acrossEl = document.getElementById("cluesAcross");
-const downEl = document.getElementById("cluesDown");
-const inputEl = document.getElementById("hiddenInput");
-const leaderboardBody = document.getElementById("leaderboard");
+let grid = [], filled = [], active = null, score = 0, startTime = Date.now();
+const gridEl = document.getElementById("grid"), inputEl = document.getElementById("hiddenInput");
 
-let grid = [], filled = [], active = null, score = 0, level = 0, startTime = null;
-
-function makeGrid(level) {
+function makeGrid() {
   const n = 15;
-  grid = Array.from({ length: n }, () => Array(n).fill("#"));
+  grid = Array.from({ length: n }, (_, r) => LEVELS[0].layout[r].split(""));
   filled = Array.from({ length: n }, () => Array(n).fill(""));
-
-  const words = LEVELS[level].words;
-  let r = 1;
-  words.forEach((w, i) => {
-    const word = w.ans.toUpperCase();
-    const c = (i % 2 === 0) ? 2 : 8;
-    if (r + word.length >= n) r = 1;
-    for (let j = 0; j < word.length; j++) grid[r + j][c] = word[j];
-    r += 2;
-  });
-
-  render(words);
+  render();
 }
 
-function render(words) {
+function render() {
   gridEl.innerHTML = "";
-  acrossEl.innerHTML = "";
-  downEl.innerHTML = "";
-  document.getElementById("level").textContent = level + 1;
-  document.getElementById("wordsCount").textContent = words.length;
-  let clueNum = 1;
-
-  words.forEach((w, i) => {
-    const div = document.createElement("div");
-    div.className = "clue";
-    div.textContent = `${clueNum}. ${w.clue}`;
-    (i % 2 === 0 ? acrossEl : downEl).appendChild(div);
-    clueNum++;
-  });
-
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid.length; c++) {
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
       const val = grid[r][c];
       const div = document.createElement("div");
-      div.className = "cell" + (val === "#" ? " block" : "");
-      if (val !== "#") {
-        const num = document.createElement("div");
-        num.className = "num";
-        num.textContent = (r + c) % 3 === 0 ? (r + c) / 2 : "";
-        div.appendChild(num);
-        div.textContent = filled[r][c]; // << only show what user typed
-        div.onclick = () => {
-          active = { r, c };
-          inputEl.focus();
-          updateActive();
-        };
+      div.className = "cell" + (val === "." ? " block" : "");
+      if (val !== ".") {
+        div.textContent = filled[r][c];
+        div.onclick = () => { active = { r, c }; updateActive(); };
       }
       gridEl.appendChild(div);
     }
   }
 }
-
 function updateActive() {
   document.querySelectorAll(".cell").forEach(e => e.classList.remove("active"));
   if (!active) return;
   const index = active.r * 15 + active.c;
   gridEl.children[index].classList.add("active");
 }
-
-inputEl.addEventListener("input", () => {
+function handleLetter(ch) {
   if (!active) return;
-  const ch = inputEl.value.toUpperCase();
-  inputEl.value = "";
-  if (!/[A-Z]/.test(ch)) return;
-  filled[active.r][active.c] = ch;
-  render(LEVELS[level].words);
+  filled[active.r][active.c] = ch.toUpperCase();
+  render();
   updateActive();
-});
-
+}
 document.getElementById("check").onclick = () => {
   let correct = 0, total = 0;
   for (let r = 0; r < 15; r++)
     for (let c = 0; c < 15; c++)
-      if (grid[r][c] !== "#") {
+      if (grid[r][c] !== ".") {
         total++;
         if (filled[r][c] === grid[r][c]) correct++;
       }
   score = Math.round((correct / total) * 100);
-  document.getElementById("score").textContent = score;
   alert(`Your score: ${score}%`);
 };
-
 document.getElementById("reveal").onclick = () => {
   for (let r = 0; r < 15; r++)
     for (let c = 0; c < 15; c++)
-      if (grid[r][c] !== "#" && !filled[r][c]) {
+      if (grid[r][c] !== "." && !filled[r][c]) {
         filled[r][c] = grid[r][c];
-        render(LEVELS[level].words);
+        render();
         return;
       }
 };
-
 document.getElementById("solve").onclick = () => {
   for (let r = 0; r < 15; r++)
     for (let c = 0; c < 15; c++)
-      if (grid[r][c] !== "#") filled[r][c] = grid[r][c];
-  render(LEVELS[level].words);
+      if (grid[r][c] !== ".") filled[r][c] = grid[r][c];
+  render();
 };
-
-document.getElementById("restart").onclick = () => makeGrid(level);
-
-document.getElementById("level1").onclick = () => { level = 0; makeGrid(level); };
-document.getElementById("level2").onclick = () => { level = 1; makeGrid(level); };
-document.getElementById("level3").onclick = () => { level = 2; makeGrid(level); };
-
-async function loadLeaderboard() {
-  try {
-    const res = await fetch(ENDPOINT + "?action=get_leaderboard");
-    const data = await res.json();
-    leaderboardBody.innerHTML = "";
-    (data.rows || []).slice(0, 10).forEach(r => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${r.player}</td><td>${r.score}</td><td>${r.seconds}</td>`;
-      leaderboardBody.appendChild(tr);
-    });
-  } catch {
-    leaderboardBody.innerHTML = "<tr><td colspan='3'>Unable to load</td></tr>";
-  }
-}
-
-document.getElementById("submit").onclick = async () => {
-  const name = prompt("Enter your name:") || "Anonymous";
-  const seconds = Math.floor((Date.now() - startTime) / 1000);
-  try {
-    await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "add_score",
-        player: name,
-        theme: "cyber-crossword",
-        score: score,
-        seconds: seconds
-      })
-    });
-    alert("✅ Score submitted!");
-    loadLeaderboard();
-  } catch {
-    alert("⚠️ Could not submit score.");
-  }
-};
-
-loadLeaderboard();
-makeGrid(0);
-startTime = Date.now();
+document.getElementById("restart").onclick = makeGrid;
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(ch => {
+  const btn = document.createElement("div");
+  btn.className = "key";
+  btn.textContent = ch;
+  btn.onclick = () => handleLetter(ch);
+  document.getElementById("keyboard").appendChild(btn);
+});
+makeGrid();
 </script>
 </body>
 </html>
